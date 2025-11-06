@@ -20,9 +20,6 @@ export const getProducts = async (req, res, next) => {
 export const getProduct = async (req, res, next) => {
   try {
     const product = await getProductById(req.params.id)
-    if (!product) {
-      return res.status(404).json({ message: 'Produto não encontrado.' })
-    }
     res.json(toPresentationProduct(product))
   } catch (error) {
     next(error)
@@ -41,9 +38,6 @@ export const createProduct = async (req, res, next) => {
 export const updateProductController = async (req, res, next) => {
   try {
     const updated = await updateProduct(req.params.id, req.body)
-    if (!updated) {
-      return res.status(404).json({ message: 'Produto não encontrado.' })
-    }
     res.json(toPresentationProduct(updated))
   } catch (error) {
     next(error)
@@ -52,10 +46,7 @@ export const updateProductController = async (req, res, next) => {
 
 export const removeProduct = async (req, res, next) => {
   try {
-    const removed = await deleteProduct(req.params.id)
-    if (!removed) {
-      return res.status(404).json({ message: 'Produto não encontrado.' })
-    }
+    await deleteProduct(req.params.id)
     res.status(204).send()
   } catch (error) {
     next(error)
