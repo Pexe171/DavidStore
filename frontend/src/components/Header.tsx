@@ -1,7 +1,9 @@
 import { Link, NavLink } from 'react-router-dom'
-import { useCart } from '../contexts/CartContext.jsx'
+import type { FC } from 'react'
 
-const Header = () => {
+import { useCart } from '../contexts/CartContext'
+
+const Header: FC = () => {
   const { items } = useCart()
   const cartCount = items.reduce((acc, item) => acc + item.quantity, 0)
 

@@ -1,20 +1,25 @@
 import { useEffect, useState } from 'react'
+import type { FC } from 'react'
+
 import {
   authenticate,
   fetchDashboard,
   fetchPaymentOverview,
   fetchPaymentTransactions
-} from '../services/api.js'
+} from '../services/api'
+import type { DashboardMetrics, PaymentOverview, PaymentTransaction } from '../services/api'
 
-const DashboardPage = () => {
-  const [metrics, setMetrics] = useState(null)
-  const [paymentOverview, setPaymentOverview] = useState(null)
-  const [paymentTransactions, setPaymentTransactions] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+type HighlightState = 'positivo' | 'negativo' | 'neutro'
+
+const DashboardPage: FC = () => {
+  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null)
+  const [paymentOverview, setPaymentOverview] = useState<PaymentOverview | null>(null)
+  const [paymentTransactions, setPaymentTransactions] = useState<PaymentTransaction[]>([])
+  const [loading, setLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string>('')
 
   useEffect(() => {
-    const load = async () => {
+    const load = async (): Promise<void> => {
       try {
         await authenticate({ email: 'admin@davidstore.com', password: 'admin123' })
         const [dashboardResponse, paymentResponse, transactionsResponse] = await Promise.all([
@@ -317,7 +322,14 @@ const DashboardPage = () => {
   )
 }
 
-const KpiCard = ({ title, value, helper, highlight = 'neutro' }) => {
+type KpiCardProps = {
+  title: string
+  value: string
+  helper: string
+  highlight?: HighlightState
+}
+
+const KpiCard: FC<KpiCardProps> = ({ title, value, helper, highlight = 'neutro' }) => {
   const highlightColor =
     highlight === 'positivo' ? '#0f766e' : highlight === 'negativo' ? '#b91c1c' : '#475569'
   return (
@@ -329,17 +341,17 @@ const KpiCard = ({ title, value, helper, highlight = 'neutro' }) => {
   )
 }
 
-const formatMethod = (method) => {
+const formatMethod = (method: string): string => {
   const map = {
     cartao_credito: 'Cartão de crédito',
     pix: 'PIX',
     boleto: 'Boleto bancário',
     carteira_digital: 'Carteira digital'
   }
-  return map[method] || method
+  return map[method as keyof typeof map] || method
 }
 
-const formatStatus = (status) => {
+const formatStatus = (status: string): string => {
   const map = {
     capturado: 'Capturado',
     recusado: 'Recusado',
@@ -351,10 +363,10 @@ const formatStatus = (status) => {
     liquidado: 'Liquidado',
     pendente: 'Pendente'
   }
-  return map[status] || status
+  return map[status as keyof typeof map] || status
 }
 
-const formatDate = (value) => {
+const formatDate = (value: string | undefined): string => {
   if (!value) return 'Data a confirmar'
   const date = new Date(value)
   return Number.isNaN(date.getTime()) ? 'Data a confirmar' : date.toLocaleDateString('pt-BR')

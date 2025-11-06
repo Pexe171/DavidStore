@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react'
-import Hero from '../components/Hero.jsx'
-import ProductCard from '../components/ProductCard.jsx'
-import CategoryFilter from '../components/CategoryFilter.jsx'
-import { fetchProducts, fetchCategories } from '../services/api.js'
+import type { FC } from 'react'
 
-const HomePage = () => {
-  const [products, setProducts] = useState([])
-  const [categories, setCategories] = useState([])
-  const [category, setCategory] = useState('')
-  const [loading, setLoading] = useState(true)
+import Hero from '../components/Hero'
+import ProductCard from '../components/ProductCard'
+import CategoryFilter from '../components/CategoryFilter'
+import { fetchProducts, fetchCategories } from '../services/api'
+import type { Category, Product } from '../services/api'
+
+const HomePage: FC = () => {
+  const [products, setProducts] = useState<Product[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [category, setCategory] = useState<string>('')
+  const [loading, setLoading] = useState<boolean>(true)
 
   useEffect(() => {
     const load = async () => {

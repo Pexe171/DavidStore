@@ -1,9 +1,24 @@
 import { useState } from 'react'
+import type { ChangeEvent, FC, FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useCart } from '../contexts/CartContext.jsx'
-import { submitOrder } from '../services/api.js'
 
-const initialForm = {
+import { useCart } from '../contexts/CartContext'
+import { submitOrder } from '../services/api'
+
+type CheckoutForm = {
+  name: string
+  email: string
+  document: string
+  address: string
+  paymentMethod: string
+}
+
+type CheckoutStatus = {
+  type: 'success' | 'error' | ''
+  message: string
+}
+
+const initialForm: CheckoutForm = {
   name: '',
   email: '',
   document: '',
@@ -11,19 +26,19 @@ const initialForm = {
   paymentMethod: 'pix'
 }
 
-const CheckoutPage = () => {
+const CheckoutPage: FC = () => {
   const { items, total, clearCart } = useCart()
-  const [form, setForm] = useState(initialForm)
-  const [status, setStatus] = useState({ type: '', message: '' })
-  const [loading, setLoading] = useState(false)
+  const [form, setForm] = useState<CheckoutForm>(initialForm)
+  const [status, setStatus] = useState<CheckoutStatus>({ type: '', message: '' })
+  const [loading, setLoading] = useState<boolean>(false)
   const navigate = useNavigate()
 
-  const handleChange = (event) => {
+  const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
     const { name, value } = event.target
     setForm((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault()
     setLoading(true)
     try {
