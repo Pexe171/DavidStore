@@ -97,9 +97,9 @@ Há um `.devcontainer/devcontainer.json` configurado. Abra a pasta no VS Code, a
 
 #### Endpoints de destaque
 
-- `GET /dashboard`: KPIs de vendas, estoque crítico e resumo financeiro do gateway.
-- `GET /gateway/overview`: visão 360º do David Pay com volume bruto, líquido, métodos e alertas.
-- `GET /gateway/transacoes`: lista transacional com filtros por status e método (`?status=capturado&method=pix`).
+- `GET /dashboard`: KPIs de vendas, estoque crítico e resumo financeiro do gateway. (Requer role: admin)
+- `GET /gateway/overview`: visão 360º do David Pay com volume bruto, líquido, métodos e alertas. (Requer role: admin)
+- `GET /gateway/transacoes`: lista transacional com filtros por status e método (`?status=capturado&method=pix`). (Requer role: admin)
 
 ## Recursos principais
 
