@@ -1,4 +1,3 @@
-import { validationResult } from 'express-validator'
 import {
   listProducts,
   getProductById,
@@ -10,7 +9,7 @@ import { toPresentationProduct } from '../utils/formatters.js'
 
 export const getProducts = async (req, res, next) => {
   try {
-    const { categoria: category, busca: search } = req.query
+    const { categoria: category, busca: search } = req.query ?? {}
     const products = await listProducts({ category, search })
     res.json(products.map(toPresentationProduct))
   } catch (error) {
@@ -31,10 +30,6 @@ export const getProduct = async (req, res, next) => {
 }
 
 export const createProduct = async (req, res, next) => {
-  const errors = validationResult(req)
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() })
-  }
   try {
     const payload = await addProduct(req.body)
     res.status(201).json(toPresentationProduct(payload))
