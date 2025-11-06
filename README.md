@@ -88,7 +88,7 @@ A camada de backend recebeu reforços de segurança completos:
 
 - **Validação de entrada com Zod** em todos os fluxos sensíveis, garantindo mensagens humanizadas.
 - **Proteções HTTP** com Helmet, políticas CORS configuráveis via variáveis de ambiente e limitação de payloads JSON.
-- **Rate limiting inteligente** com janelas específicas para autenticação e uso geral.
+- **Rate limiting inteligente** com janelas específicas para autenticação e uso geral, agora distribuído com Redis para manter proteção consistente em múltiplas réplicas.
 - **Autenticação robusta** com refresh tokens persistidos e hashed no banco, detectando reutilização indevida e permitindo logout seguro.
 - **Rotação automática de chaves JWT** com identificação (`kid`) embutida no token e intervalo configurável.
 - **Cookies HttpOnly** para o refresh token (com fallback via corpo da requisição), facilitando aplicações SPA e mobile.
@@ -96,6 +96,13 @@ A camada de backend recebeu reforços de segurança completos:
 > Configure `CORS_ALLOWED_ORIGINS`, `RATE_LIMIT_*`, `JWT_ROTATION_INTERVAL_MINUTES` e `JWT_REFRESH_EXPIRES_IN_MS` para ajustar o comportamento em produção.
 > Para observabilidade, ajuste `LOG_LEVEL`, `OTEL_TRACING_ENABLED`, `OTEL_SERVICE_NAME` e `OTEL_EXPORTER_OTLP_*` conforme o provedor de monitoramento escolhido.
 
+
+### Gestão de dados e DevOps
+
+- **Cache de produtos com Redis:** o catálogo responde mais rápido graças ao cache distribuído com TTL configurável via `PRODUCT_CACHE_TTL_SECONDS`. O backend invalida automaticamente as chaves sempre que um produto é criado, editado ou removido.
+- **Rate limiting centralizado:** o middleware agora usa Redis como store principal (com fallback em memória), garantindo limites consistentes mesmo em um cluster de múltiplas instâncias.
+- **Stack IaC completa com Terraform:** em `infrastructure/terraform` você encontra um template AWS que provisiona VPC, EC2 para o backend, RDS PostgreSQL, ElastiCache Redis, SQS e parâmetros SSM. Execute `terraform init && terraform apply -var-file=terraform.tfvars` após ajustar o `terraform.tfvars.example`.
+- **Docker Compose com Redis pronto:** o ambiente local ganhou um contêiner Redis dedicado e variáveis de ambiente já configuradas para aproveitar cache e rate limiting distribuído durante o desenvolvimento.
 
 ### Qualidade de código e testes
 
