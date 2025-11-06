@@ -1,0 +1,9 @@
+{
+  "name": "david-store",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend",
+    "shared/types"
+  ]
+}

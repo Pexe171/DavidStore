@@ -16,15 +16,26 @@ O projeto é composto por duas aplicações:
 - **Read model dedicado para o dashboard:** métricas e alertas agora são servidos a partir da tabela `DashboardSnapshot`, regenerada em background sempre que pedidos ou pagamentos mudam de status. O painel passa a responder instantaneamente mesmo com alto volume de dados.
 - **Fila plugável:** a implementação atual usa Node EventEmitter como broker em memória, facilitando o swap por RabbitMQ/Kafka/Redis Streams em produção sem alterar o domínio.
 
+### Observabilidade, DX e resiliência de nível sênior
+
+- **Monorepo com tipos compartilhados:** backend, frontend e o pacote `@davidstore/types` vivem no mesmo workspace. Os esquemas Zod usados pela API são publicados e reutilizados no React, eliminando divergências de contrato.
+- **Logs estruturados com Pino:** cada requisição ganha contexto (trace/span ID) e logs padronizados, prontos para ferramentas como ELK ou Datadog.
+- **Tracing distribuído com OpenTelemetry:** a API exporta spans automaticamente (HTTP, Express, fila de eventos) com opção de envio para um collector OTLP. Assim fica simples rastrear uma compra do clique até a captura financeira.
+- **Fila instrumentada e resiliente:** o broker em memória agora gera spans e logs próprios, facilitando a troca por RabbitMQ/Kafka sem perder observabilidade.
+- **Dashboard rebuild assíncrono monitorado:** snapshots de métricas são reconstruídos via eventos e registrados em logs/traços, garantindo diagnósticos rápidos em incidentes.
+
 ## Estrutura de pastas
 
 ```
 DavidStore/
 ├── backend/          # API REST com autenticação e painel administrativo
-└── frontend/         # SPA em React consumindo a API e exibindo a loja
+├── frontend/         # SPA em React consumindo a API e exibindo a loja
+└── shared/types/     # Pacote de esquemas Zod compartilhados (workspace)
 ```
 
 ## Como executar localmente
+
+> Execute `npm install` na raiz do repositório para instalar todas as dependências do workspace antes de seguir qualquer opção abaixo.
 
 ### Pré-requisitos
 
@@ -37,7 +48,7 @@ DavidStore/
 
 1. Copie as variáveis de ambiente base: `cp backend/.env.example backend/.env` (ajuste os segredos `JWT_SECRET_PRIMARY`/`JWT_SECRET_SECONDARY` para reforçar a rotação de chaves).
 2. Suba toda a stack: `docker compose up --build`.
-3. Popular o banco com os dados de demonstração: `docker compose exec backend npm run db:seed`.
+3. Popular o banco com os dados de demonstração: `docker compose exec backend npm run --workspace backend db:seed`.
 
 Pronto! A API responde em `http://localhost:4000` e o frontend em `http://localhost:5173`.
 
@@ -52,13 +63,11 @@ Credenciais padrão para explorar o painel administrativo:
 2. Copie o `.env` do backend e ajuste o `DATABASE_URL` se necessário:
 
    ```bash
-   cd backend
-   cp .env.example .env
-   npm install
-   npm run prisma:generate
-   npm run migrate:deploy
-   npm run db:seed
-   npm run dev
+   cp backend/.env.example backend/.env
+   npm run --workspace backend prisma:generate
+   npm run --workspace backend migrate:deploy
+   npm run --workspace backend db:seed
+   npm run --workspace backend dev
    ```
 
    A API ficará disponível em `http://localhost:4000`.
@@ -66,10 +75,7 @@ Credenciais padrão para explorar o painel administrativo:
 3. Em outro terminal, suba o frontend:
 
    ```bash
-   cd frontend
-   npm install
-   cp .env.example .env
-   npm run dev
+   npm run --workspace frontend dev
    ```
 
 > 💡 Para criar novas migrations durante o desenvolvimento, utilize `npm run migrate:dev -- --name <descricao>` no diretório `backend`.
@@ -86,6 +92,7 @@ A camada de backend recebeu reforços de segurança completos:
 - **Cookies HttpOnly** para o refresh token (com fallback via corpo da requisição), facilitando aplicações SPA e mobile.
 
 > Configure `CORS_ALLOWED_ORIGINS`, `RATE_LIMIT_*`, `JWT_ROTATION_INTERVAL_MINUTES` e `JWT_REFRESH_EXPIRES_IN_MS` para ajustar o comportamento em produção.
+> Para observabilidade, ajuste `LOG_LEVEL`, `OTEL_TRACING_ENABLED`, `OTEL_SERVICE_NAME` e `OTEL_EXPORTER_OTLP_*` conforme o provedor de monitoramento escolhido.
 
 
 ### Qualidade de código e testes

@@ -1,0 +1,12 @@
+{
+  "name": "@davidstore/types",
+  "version": "1.0.0",
+  "description": "Esquemas Zod compartilhados entre backend e frontend da David Store.",
+  "type": "module",
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "sideEffects": false,
+  "dependencies": {
+    "zod": "^3.23.8"
+  }
+}

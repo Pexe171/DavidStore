@@ -1,131 +1,54 @@
 import axios from 'axios'
+import {
+  AuthResponseSchema,
+  CategoryListSchema,
+  DashboardSnapshotSchema,
+  PaymentOverviewSchema,
+  PaymentTransactionsResponseSchema,
+  ProductListResponseSchema,
+  ProductPresentationSchema,
+  SubmitOrderPayloadSchema,
+  type AuthResponse as AuthResponseType,
+  type Category as CategoryType,
+  type DashboardMetrics as DashboardMetricsType,
+  type PaymentOverview as PaymentOverviewType,
+  type PaymentTransaction as PaymentTransactionType,
+  type PaymentTransactionsResponse as PaymentTransactionsResponseType,
+  type ProductPresentation,
+  type SubmitOrderPayload as SubmitOrderPayloadType
+} from '@davidstore/types'
 
-export type Category = {
-  id: string
-  name: string
-}
-
-export type Product = {
-  id: string
-  name: string
-  description: string
-  brand: string
-  price: number
-  finalPrice: number
-  stock?: number
-  images?: string[]
-  highlights?: string[]
-}
-
-export type DashboardMetrics = {
-  metrics: {
-    totalRevenue: number
-    totalOrders: number
-    averageTicket: number
-    processingOrders: number
-    deliveredOrders: number
-  }
-  lowStock: Array<{
-    id: string
-    name: string
-    stock: number
-  }>
-  paymentGateway?: {
-    taxaAprovacao?: number
-    volumeBruto?: number
-  }
-}
-
-export type PaymentTransaction = {
-  id: string
-  method: string
-  amount: number
-  orderId: string
-  status: string
-}
-
-export type PaymentOverview = {
-  kpis: {
-    volumeBruto: number
-    volumeLiquido: number
-    taxaAprovacao: number
-    taxaChargeback: number
-    ticketMedioAprovado: number
-    tempoMedioLiquidacao: number
-  }
-  metodos: Array<{
-    method: string
-    count: number
-    percentual: number
-    volume: number
-  }>
-  distribuicaoStatus: Record<string, number>
-  alertas: Array<{
-    id: string
-    customerName: string
-    mensagem: string
-    orderId: string
-    riskScore: number
-  }>
-  agendaLiquidacoes: Array<{
-    id: string
-    orderId: string
-    expectedAmount: number
-    settlementDate: string
-  }>
-  temposProcessamento: Array<{
-    id: string
-    orderId: string
-    authorizationSeconds?: number
-    captureSeconds?: number
-  }>
-  transacoesRecentes: PaymentTransaction[]
-}
-
-export type PaymentTransactionsResponse = {
-  transactions?: PaymentTransaction[]
-}
-
-export type AuthResponse = {
-  token: string
-}
-
-export type SubmitOrderPayload = {
-  customer: {
-    id: string
-    name: string
-    email: string
-    document: string
-    address: string
-  }
-  items: Array<{
-    productId: string
-    quantity: number
-  }>
-}
+export type Category = CategoryType
+export type Product = ProductPresentation
+export type DashboardMetrics = DashboardMetricsType
+export type PaymentOverview = PaymentOverviewType
+export type PaymentTransaction = PaymentTransactionType
+export type PaymentTransactionsResponse = PaymentTransactionsResponseType
+export type SubmitOrderPayload = SubmitOrderPayloadType
+export type AuthResponse = AuthResponseType
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000'
 })
 
 export const fetchProducts = async (params: Record<string, unknown> = {}): Promise<Product[]> => {
-  const { data } = await api.get<Product[]>('/produtos', { params })
-  return data
+  const { data } = await api.get('/produtos', { params })
+  return ProductListResponseSchema.parse(data)
 }
 
 export const fetchProduct = async (id: string): Promise<Product> => {
-  const { data } = await api.get<Product>(`/produtos/${id}`)
-  return data
+  const { data } = await api.get(`/produtos/${id}`)
+  return ProductPresentationSchema.parse(data)
 }
 
 export const fetchCategories = async (): Promise<Category[]> => {
-  const { data } = await api.get<Category[]>('/categorias')
-  return data
+  const { data } = await api.get('/categorias')
+  return CategoryListSchema.parse(data)
 }
 
 export const authenticate = async (credentials: { email: string; password: string }): Promise<AuthResponse> => {
-  const { data } = await api.post<AuthResponse>('/auth/login', credentials)
-  return data
+  const { data } = await api.post('/auth/login', credentials)
+  return AuthResponseSchema.parse(data)
 }
 
 export const setAuthToken = (token?: string): void => {
@@ -138,24 +61,25 @@ export const setAuthToken = (token?: string): void => {
 }
 
 export const fetchDashboard = async (): Promise<DashboardMetrics> => {
-  const { data } = await api.get<DashboardMetrics>('/dashboard')
-  return data
+  const { data } = await api.get('/dashboard')
+  return DashboardSnapshotSchema.parse(data)
 }
 
 export const fetchPaymentOverview = async (): Promise<PaymentOverview> => {
-  const { data } = await api.get<PaymentOverview>('/gateway/overview')
-  return data
+  const { data } = await api.get('/gateway/overview')
+  return PaymentOverviewSchema.parse(data)
 }
 
 export const fetchPaymentTransactions = async (
   params: Record<string, unknown> = {}
 ): Promise<PaymentTransactionsResponse> => {
-  const { data } = await api.get<PaymentTransactionsResponse>('/gateway/transacoes', { params })
-  return data
+  const { data } = await api.get('/gateway/transacoes', { params })
+  return PaymentTransactionsResponseSchema.parse(data)
 }
 
 export const submitOrder = async (payload: SubmitOrderPayload): Promise<void> => {
-  await api.post('/pedidos', payload)
+  const body = SubmitOrderPayloadSchema.parse(payload)
+  await api.post('/pedidos', body)
 }
 
 export default api
