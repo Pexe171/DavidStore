@@ -9,6 +9,8 @@ const mapProduct = (product) => ({
   price: decimalToNumber(product.price) ?? 0,
   discount: decimalToNumber(product.discount) ?? 0,
   stock: product.stock,
+  reservedStock: product.reservedStock ?? 0,
+  availableStock: product.stock - (product.reservedStock ?? 0),
   brand: product.brand,
   rating: decimalToNumber(product.rating),
   highlights: product.highlights,

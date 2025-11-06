@@ -517,6 +517,8 @@ const decimal = (value) => new Prisma.Decimal(value)
 
 async function main () {
   console.log('Limpando dados anteriores...')
+  await prisma.dashboardSnapshot.deleteMany()
+  await prisma.inventoryReservation.deleteMany()
   await prisma.payment.deleteMany()
   await prisma.orderItem.deleteMany()
   await prisma.order.deleteMany()
@@ -623,6 +625,10 @@ async function main () {
       }
     })
   }
+
+  console.log('Gerando snapshot inicial do dashboard...')
+  const { rebuildDashboardSnapshot } = await import('../src/services/dashboardReadModelService.js')
+  await rebuildDashboardSnapshot()
 
   console.log('Base de dados da David Store preparada com sucesso!')
 }
