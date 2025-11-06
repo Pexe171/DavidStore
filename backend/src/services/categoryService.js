@@ -1,4 +1,5 @@
 import prisma from '../lib/prisma.js'
+import { NotFoundError } from '../utils/errors.js'
 
 export const listCategories = async () => {
   return prisma.category.findMany({
@@ -7,5 +8,9 @@ export const listCategories = async () => {
 }
 
 export const getCategoryById = async (id) => {
-  return prisma.category.findUnique({ where: { id } })
+  const category = await prisma.category.findUnique({ where: { id } })
+  if (!category) {
+    throw new NotFoundError('Categoria não encontrada.')
+  }
+  return category
 }

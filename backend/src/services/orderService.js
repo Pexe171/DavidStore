@@ -1,5 +1,6 @@
 import { v4 as uuid } from 'uuid'
 import prisma from '../lib/prisma.js'
+import { NotFoundError } from '../utils/errors.js'
 import { decimalToNumber, toDecimal } from '../utils/prisma.js'
 
 const mapOrderItem = (item) => ({
@@ -58,7 +59,10 @@ export const getOrderById = async (id) => {
       }
     }
   })
-  return order ? mapOrder(order) : null
+  if (!order) {
+    throw new NotFoundError('Pedido não encontrado.')
+  }
+  return mapOrder(order)
 }
 
 export const createOrder = async ({ customer, items }) => {
@@ -144,7 +148,7 @@ export const updateOrderStatus = async (id, status) => {
     return getOrderById(id)
   } catch (error) {
     if (error.code === 'P2025') {
-      return null
+      throw new NotFoundError('Pedido não encontrado.')
     }
     throw error
   }

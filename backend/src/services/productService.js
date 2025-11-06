@@ -1,4 +1,5 @@
 import prisma from '../lib/prisma.js'
+import { NotFoundError } from '../utils/errors.js'
 import { decimalToNumber, toDecimal } from '../utils/prisma.js'
 
 const mapProduct = (product) => ({
@@ -39,7 +40,10 @@ export const listProducts = async ({ category, search } = {}) => {
 
 export const getProductById = async (id) => {
   const product = await prisma.product.findUnique({ where: { id } })
-  return product ? mapProduct(product) : null
+  if (!product) {
+    throw new NotFoundError('Produto não encontrado.')
+  }
+  return mapProduct(product)
 }
 
 export const addProduct = async (payload) => {
@@ -99,7 +103,7 @@ export const updateProduct = async (id, changes) => {
     return mapProduct(updated)
   } catch (error) {
     if (error.code === 'P2025') {
-      return null
+      throw new NotFoundError('Produto não encontrado.')
     }
     if (error.code === 'P2003') {
       const friendly = new Error('Categoria informada não existe.')
@@ -116,7 +120,7 @@ export const deleteProduct = async (id) => {
     return true
   } catch (error) {
     if (error.code === 'P2025') {
-      return false
+      throw new NotFoundError('Produto não encontrado.')
     }
     throw error
   }
