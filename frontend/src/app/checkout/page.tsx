@@ -1,9 +1,11 @@
-import { useState } from 'react'
-import type { ChangeEvent, FC, FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+'use client'
 
-import { useCart } from '../contexts/CartContext'
-import { submitOrder } from '../services/api'
+import { useState } from 'react'
+import type { ChangeEvent, FormEvent } from 'react'
+import { useRouter } from 'next/navigation'
+
+import { useCart } from '@/contexts/CartContext'
+import { submitOrder } from '@/services/api'
 
 type CheckoutForm = {
   name: string
@@ -26,12 +28,12 @@ const initialForm: CheckoutForm = {
   paymentMethod: 'pix'
 }
 
-const CheckoutPage: FC = () => {
+const CheckoutPage = (): JSX.Element => {
   const { items, total, clearCart } = useCart()
   const [form, setForm] = useState<CheckoutForm>(initialForm)
   const [status, setStatus] = useState<CheckoutStatus>({ type: '', message: '' })
   const [loading, setLoading] = useState<boolean>(false)
-  const navigate = useNavigate()
+  const router = useRouter()
 
   const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
     const { name, value } = event.target
@@ -41,6 +43,8 @@ const CheckoutPage: FC = () => {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault()
     setLoading(true)
+    setStatus({ type: '', message: '' })
+
     try {
       await submitOrder({
         customer: {
@@ -55,7 +59,9 @@ const CheckoutPage: FC = () => {
       clearCart()
       setStatus({ type: 'success', message: 'Pedido confirmado! Você receberá atualizações no e-mail informado.' })
       setForm(initialForm)
-      setTimeout(() => navigate('/'), 2000)
+      setTimeout(() => {
+        router.push('/')
+      }, 2000)
     } catch (error) {
       console.error('Erro ao finalizar compra:', error)
       setStatus({ type: 'error', message: 'Não foi possível concluir o pedido. Tente novamente mais tarde.' })
@@ -88,24 +94,54 @@ const CheckoutPage: FC = () => {
           <div style={{ display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
             <label style={{ display: 'grid', gap: '0.5rem' }}>
               Nome completo
-              <input name="name" value={form.name} onChange={handleChange} required style={{ padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #cbd5f5' }} />
+              <input
+                name="name"
+                value={form.name}
+                onChange={handleChange}
+                required
+                style={{ padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #cbd5f5' }}
+              />
             </label>
             <label style={{ display: 'grid', gap: '0.5rem' }}>
               E-mail
-              <input type="email" name="email" value={form.email} onChange={handleChange} required style={{ padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #cbd5f5' }} />
+              <input
+                type="email"
+                name="email"
+                value={form.email}
+                onChange={handleChange}
+                required
+                style={{ padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #cbd5f5' }}
+              />
             </label>
             <label style={{ display: 'grid', gap: '0.5rem' }}>
               CPF/CNPJ
-              <input name="document" value={form.document} onChange={handleChange} required style={{ padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #cbd5f5' }} />
+              <input
+                name="document"
+                value={form.document}
+                onChange={handleChange}
+                required
+                style={{ padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #cbd5f5' }}
+              />
             </label>
           </div>
           <label style={{ display: 'grid', gap: '0.5rem' }}>
             Endereço completo
-            <input name="address" value={form.address} onChange={handleChange} required style={{ padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #cbd5f5' }} />
+            <input
+              name="address"
+              value={form.address}
+              onChange={handleChange}
+              required
+              style={{ padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #cbd5f5' }}
+            />
           </label>
           <label style={{ display: 'grid', gap: '0.5rem' }}>
             Forma de pagamento
-            <select name="paymentMethod" value={form.paymentMethod} onChange={handleChange} style={{ padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #cbd5f5' }}>
+            <select
+              name="paymentMethod"
+              value={form.paymentMethod}
+              onChange={handleChange}
+              style={{ padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #cbd5f5' }}
+            >
               <option value="pix">PIX David Pay</option>
               <option value="card">Cartão com David Shield</option>
               <option value="boleto">Boleto inteligente</option>

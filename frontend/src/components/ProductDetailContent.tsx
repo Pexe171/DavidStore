@@ -1,51 +1,16 @@
-import { useEffect, useState } from 'react'
+'use client'
+
 import type { FC } from 'react'
-import { useParams } from 'react-router-dom'
 
-import { fetchProduct } from '../services/api'
-import type { Product } from '../services/api'
-import { useCart } from '../contexts/CartContext'
+import { useCart } from '@/contexts/CartContext'
+import type { Product } from '@/services/api'
 
-const ProductDetailPage: FC = () => {
-  const { id } = useParams<{ id: string }>()
-  const [product, setProduct] = useState<Product | null>(null)
-  const [loading, setLoading] = useState<boolean>(true)
+type ProductDetailContentProps = {
+  product: Product
+}
+
+const ProductDetailContent: FC<ProductDetailContentProps> = ({ product }) => {
   const { addItem } = useCart()
-
-  useEffect(() => {
-    const load = async (): Promise<void> => {
-      if (!id) {
-        setProduct(null)
-        setLoading(false)
-        return
-      }
-      try {
-        const response = await fetchProduct(id)
-        setProduct(response)
-      } catch (error) {
-        console.error('Erro ao buscar produto:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-    load()
-  }, [id])
-
-  if (loading) {
-    return (
-      <section className="container" style={{ padding: '2rem 0 4rem' }}>
-        <p>Buscando detalhes desse produto exclusivo...</p>
-      </section>
-    )
-  }
-
-  if (!product) {
-    return (
-      <section className="container" style={{ padding: '2rem 0 4rem' }}>
-        <p>Produto não encontrado. Talvez ele esteja em pré-venda.</p>
-      </section>
-    )
-  }
 
   const finalPrice = product.finalPrice.toLocaleString('pt-BR', {
     style: 'currency',
@@ -78,7 +43,9 @@ const ProductDetailPage: FC = () => {
           <p style={{ color: '#64748b', fontSize: '1.125rem' }}>{product.description}</p>
           <div>
             <strong style={{ fontSize: '2.5rem' }}>{finalPrice}</strong>
-            <p style={{ margin: 0, color: '#94a3b8' }}>De {originalPrice} por {finalPrice}</p>
+            <p style={{ margin: 0, color: '#94a3b8' }}>
+              De {originalPrice} por {finalPrice}
+            </p>
           </div>
           <ul style={{ listStyle: 'disc', paddingLeft: '1.5rem', color: '#334155' }}>
             {product.highlights?.map((highlight) => (
@@ -94,4 +61,4 @@ const ProductDetailPage: FC = () => {
   )
 }
 
-export default ProductDetailPage
+export default ProductDetailContent

@@ -1,7 +1,9 @@
-import { Link } from 'react-router-dom'
+'use client'
+
+import Link from 'next/link'
 import type { FC } from 'react'
 
-import { useCart } from '../contexts/CartContext'
+import { useCart } from '@/contexts/CartContext'
 
 const CartSummary: FC = () => {
   const { items, total, removeItem, clearCart } = useCart()
@@ -11,7 +13,7 @@ const CartSummary: FC = () => {
       <div className="card" style={{ textAlign: 'center' }}>
         <h2>Seu carrinho está vazio</h2>
         <p>Que tal explorar nossas ofertas inteligentes e montar sua lista de desejos?</p>
-        <Link to="/" className="btn-primary" style={{ marginTop: '1rem' }}>
+        <Link href="/" className="btn-primary" style={{ marginTop: '1rem' }}>
           Ver ofertas
         </Link>
       </div>
@@ -27,7 +29,11 @@ const CartSummary: FC = () => {
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         {items.map((item) => (
           <li key={item.id} style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            <img src={item.image} alt={item.name} style={{ width: '72px', height: '72px', borderRadius: '16px', objectFit: 'cover' }} />
+            <img
+              src={item.image}
+              alt={item.name}
+              style={{ width: '72px', height: '72px', borderRadius: '16px', objectFit: 'cover' }}
+            />
             <div style={{ flex: 1 }}>
               <strong>{item.name}</strong>
               <p style={{ color: '#94a3b8', margin: '0.25rem 0' }}>Quantidade: {item.quantity}</p>
@@ -58,7 +64,7 @@ const CartSummary: FC = () => {
           <button onClick={clearCart} className="btn-primary" style={{ background: '#1f2937' }}>
             Limpar carrinho
           </button>
-          <Link to="/checkout" className="btn-primary">
+          <Link href="/checkout" className="btn-primary">
             Finalizar compra
           </Link>
         </div>

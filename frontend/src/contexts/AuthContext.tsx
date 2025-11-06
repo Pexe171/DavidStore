@@ -1,3 +1,5 @@
+'use client'
+
 import {
   createContext,
   useCallback,
@@ -9,7 +11,7 @@ import {
 } from 'react'
 import type { FC, PropsWithChildren } from 'react'
 
-import { authenticate, setAuthToken } from '../services/api'
+import { authenticate, setAuthToken } from '@/services/api'
 
 type AuthUser = {
   email: string
@@ -111,16 +113,19 @@ export const AuthProvider: FC<PropsWithChildren> = ({ children }) => {
     await login(lastCredentialsRef.current)
   }, [login])
 
-  const value = useMemo<AuthContextValue>(() => ({
-    user,
-    token,
-    isAuthenticated: Boolean(token),
-    isAdmin: user?.role === 'admin',
-    isLoading,
-    login,
-    logout,
-    refresh
-  }), [user, token, isLoading, login, logout, refresh])
+  const value = useMemo<AuthContextValue>(
+    () => ({
+      user,
+      token,
+      isAuthenticated: Boolean(token),
+      isAdmin: user?.role === 'admin',
+      isLoading,
+      login,
+      logout,
+      refresh
+    }),
+    [user, token, isLoading, login, logout, refresh]
+  )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

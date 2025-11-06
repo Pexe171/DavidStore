@@ -6,7 +6,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:5173',
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3000',
     trace: 'retain-on-failure'
   },
   projects: [
@@ -18,7 +18,7 @@ export default defineConfig({
   webServer: {
     command: 'npm run dev',
     cwd: __dirname,
-    port: 5173,
+    port: 3000,
     reuseExistingServer: !process.env.CI
   }
 })

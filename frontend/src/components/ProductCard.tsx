@@ -1,8 +1,10 @@
-import { Link } from 'react-router-dom'
+'use client'
+
+import Link from 'next/link'
 import type { FC } from 'react'
 
-import { useCart } from '../contexts/CartContext'
-import type { Product } from '../services/api'
+import { useCart } from '@/contexts/CartContext'
+import type { Product } from '@/services/api'
 
 type ProductCardProps = {
   product: Product
@@ -52,11 +54,7 @@ const ProductCard: FC<ProductCardProps> = ({ product }) => {
         <button className="btn-primary" onClick={handleAddToCart} style={{ flex: 1 }}>
           Comprar agora
         </button>
-        <Link
-          to={`/produto/${product.id}`}
-          className="btn-primary"
-          style={{ flex: 1, background: '#1f2937' }}
-        >
+        <Link href={`/produto/${product.id}`} className="btn-primary" style={{ flex: 1, background: '#1f2937' }}>
           Ver detalhes
         </Link>
       </div>

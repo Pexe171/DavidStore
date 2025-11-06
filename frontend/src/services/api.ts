@@ -27,8 +27,10 @@ export type PaymentTransactionsResponse = PaymentTransactionsResponseType
 export type SubmitOrderPayload = SubmitOrderPayloadType
 export type AuthResponse = AuthResponseType
 
+const baseURL = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000'
+  baseURL
 })
 
 export const fetchProducts = async (params: Record<string, unknown> = {}): Promise<Product[]> => {

@@ -1,11 +1,17 @@
-import { Link, NavLink } from 'react-router-dom'
+'use client'
+
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import type { FC } from 'react'
 
-import { useCart } from '../contexts/CartContext'
+import { useCart } from '@/contexts/CartContext'
 
 const Header: FC = () => {
   const { items } = useCart()
+  const pathname = usePathname()
   const cartCount = items.reduce((acc, item) => acc + item.quantity, 0)
+
+  const isActive = (href: string): boolean => pathname === href
 
   return (
     <header
@@ -20,19 +26,19 @@ const Header: FC = () => {
       }}
     >
       <div className="container" style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-        <Link to="/" style={{ fontSize: '1.5rem', fontWeight: 700 }}>
+        <Link href="/" style={{ fontSize: '1.5rem', fontWeight: 700 }}>
           David Store
         </Link>
         <nav style={{ display: 'flex', gap: '1.5rem' }}>
-          <NavLink to="/" style={({ isActive }) => ({ color: isActive ? '#38bdf8' : '#fff' })}>
+          <Link href="/" style={{ color: isActive('/') ? '#38bdf8' : '#fff' }}>
             Início
-          </NavLink>
-          <NavLink to="/painel" style={({ isActive }) => ({ color: isActive ? '#38bdf8' : '#fff' })}>
+          </Link>
+          <Link href="/painel" style={{ color: isActive('/painel') ? '#38bdf8' : '#fff' }}>
             Painel Administrativo
-          </NavLink>
-          <NavLink to="/carrinho" style={({ isActive }) => ({ color: isActive ? '#38bdf8' : '#fff' })}>
+          </Link>
+          <Link href="/carrinho" style={{ color: isActive('/carrinho') ? '#38bdf8' : '#fff' }}>
             Meu Carrinho ({cartCount})
-          </NavLink>
+          </Link>
         </nav>
       </div>
     </header>
