@@ -85,6 +85,20 @@ export default {
       ttlSeconds: Number(process.env.PRODUCT_CACHE_TTL_SECONDS) || 60
     }
   },
+  messaging: {
+    driver: process.env.MESSAGE_QUEUE_DRIVER || 'sqs',
+    sqs: {
+      queueUrl: process.env.SQS_QUEUE_URL || '',
+      region: process.env.SQS_REGION || process.env.AWS_REGION || 'us-east-1',
+      endpoint: process.env.SQS_ENDPOINT || '',
+      visibilityTimeoutSeconds:
+        Number(process.env.SQS_VISIBILITY_TIMEOUT_SECONDS) || 30,
+      waitTimeSeconds: Number(process.env.SQS_WAIT_TIME_SECONDS) || 20,
+      maxNumberOfMessages: Number(process.env.SQS_MAX_NUMBER_OF_MESSAGES) || 5,
+      pollIntervalMs: Number(process.env.SQS_POLL_INTERVAL_MS) || 0,
+      backoffMs: Number(process.env.SQS_BACKOFF_MS) || 2000
+    }
+  },
   observability: {
     logging: {
       level: process.env.LOG_LEVEL || 'info',
