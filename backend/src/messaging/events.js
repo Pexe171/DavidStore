@@ -1,4 +1,5 @@
 export const EVENTS = {
+  PAYMENT_INTENT_CREATED: 'payment.intent_created',
   ORDER_CREATED: 'order.created',
   ORDER_STATUS_UPDATED: 'order.status_updated',
   PAYMENT_CAPTURED: 'payment.captured',

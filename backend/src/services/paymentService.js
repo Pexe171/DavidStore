@@ -191,15 +191,58 @@ export const ensurePaymentIntent = async ({ orderId, total, customer }) => {
     return mapPayment(existing)
   }
 
+  const amount = decimalToNumber(total) ?? 0
+
+  await messageQueue.publish(EVENTS.PAYMENT_INTENT_CREATED, {
+    orderId,
+    amount,
+    method: 'pix',
+    customerName: customer?.name ?? 'Cliente David Store'
+  })
+
+  return {
+    id: null,
+    orderId,
+    method: 'pix',
+    cardBrand: null,
+    status: 'aguardando_pagamento',
+    amount,
+    netAmount: null,
+    installments: null,
+    gatewayFees: null,
+    riskScore: null,
+    chargeback: false,
+    settlementDate: null,
+    settlementStatus: null,
+    customerName: customer?.name ?? 'Cliente David Store',
+    createdAt: null,
+    authorizedAt: null,
+    capturedAt: null
+  }
+}
+
+export const createPaymentIntentRecord = async ({
+  orderId,
+  amount,
+  method = 'pix',
+  customerName
+}) => {
+  const existing = await prisma.payment.findUnique({ where: { orderId } })
+  if (existing) {
+    return mapPayment(existing)
+  }
+
+  const normalizedAmount = amount ?? 0
+
   const created = await prisma.payment.create({
     data: {
       orderId,
-      method: 'pix',
+      method,
       status: 'aguardando_pagamento',
-      amount: toDecimal(total),
+      amount: toDecimal(normalizedAmount),
       netAmount: null,
       installments: null,
-      customerName: customer?.name ?? 'Cliente David Store'
+      customerName: customerName ?? 'Cliente David Store'
     }
   })
 
