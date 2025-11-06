@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import type { FC } from 'react'
 
 import Hero from '../components/Hero'
@@ -10,25 +11,53 @@ import type { Category, Product } from '../services/api'
 const HomePage: FC = () => {
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
-  const [category, setCategory] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(true)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const category = searchParams.get('categoria') ?? ''
+
+  const handleSelectCategory = (categoryId: string) => {
+    if (categoryId === category) {
+      return
+    }
+
+    const nextParams = new URLSearchParams(searchParams)
+
+    if (categoryId) {
+      nextParams.set('categoria', categoryId)
+    } else {
+      nextParams.delete('categoria')
+    }
+
+    setSearchParams(nextParams)
+  }
 
   useEffect(() => {
-    const load = async () => {
+    const loadCategories = async () => {
       try {
-        const [productResponse, categoryResponse] = await Promise.all([
-          fetchProducts(category ? { categoria: category } : {}),
-          fetchCategories()
-        ])
-        setProducts(productResponse)
+        const categoryResponse = await fetchCategories()
         setCategories(categoryResponse)
       } catch (error) {
-        console.error('Erro ao carregar dados da home:', error)
+        console.error('Erro ao carregar categorias:', error)
+      }
+    }
+
+    loadCategories()
+  }, [])
+
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        setLoading(true)
+        const productResponse = await fetchProducts(category ? { categoria: category } : {})
+        setProducts(productResponse)
+      } catch (error) {
+        console.error('Erro ao carregar produtos:', error)
       } finally {
         setLoading(false)
       }
     }
-    load()
+
+    loadProducts()
   }, [category])
 
   return (
@@ -43,7 +72,7 @@ const HomePage: FC = () => {
             </p>
           </div>
         </header>
-        <CategoryFilter categories={categories} active={category} onSelect={setCategory} />
+        <CategoryFilter categories={categories} active={category} onSelect={handleSelectCategory} />
         {loading ? (
           <p>Carregando a vitrine David Store...</p>
         ) : (
