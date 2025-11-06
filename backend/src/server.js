@@ -2,18 +2,23 @@ import 'dotenv/config'
 import app from './app.js'
 import config from '../config/default.js'
 import prisma from './lib/prisma.js'
+import { scheduleAutomaticRotation } from './lib/jwtKeys.js'
 
 const { port, name } = config.app
 
 const start = async () => {
   try {
     await prisma.$connect()
+    const rotationInterval = scheduleAutomaticRotation()
     const server = app.listen(port, () => {
       console.log(`${name} rodando na porta ${port}`)
     })
 
     const shutdown = async () => {
       console.log('Encerrando servidor com segurança...')
+      if (rotationInterval) {
+        clearInterval(rotationInterval)
+      }
       await prisma.$disconnect()
       server.close(() => {
         process.exit(0)

@@ -1,21 +1,14 @@
 import { Router } from 'express'
-import { body } from 'express-validator'
-import { login, signup } from '../controllers/authController.js'
+import { login, refresh, signup, signout } from '../controllers/authController.js'
+import { validateRequest } from '../middleware/validateRequest.js'
+import { authRateLimiter } from '../middleware/rateLimiter.js'
+import { loginSchema, refreshSchema, signupSchema } from '../validation/authSchemas.js'
 
 const router = Router()
 
-const loginValidation = [
-  body('email').isEmail().withMessage('E-mail inválido.'),
-  body('password').isLength({ min: 6 }).withMessage('Senha deve ter no mínimo 6 caracteres.')
-]
-
-const signupValidation = [
-  body('name').notEmpty().withMessage('Nome é obrigatório.'),
-  body('email').isEmail().withMessage('E-mail inválido.'),
-  body('password').isLength({ min: 6 }).withMessage('Senha deve ter no mínimo 6 caracteres.')
-]
-
-router.post('/login', loginValidation, login)
-router.post('/signup', signupValidation, signup)
+router.post('/login', authRateLimiter, validateRequest(loginSchema), login)
+router.post('/signup', authRateLimiter, validateRequest(signupSchema), signup)
+router.post('/refresh', validateRequest(refreshSchema), refresh)
+router.post('/logout', validateRequest(refreshSchema), signout)
 
 export default router
