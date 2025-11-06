@@ -1,13 +1,9 @@
 import { useEffect, useState } from 'react'
 import type { FC } from 'react'
 
-import {
-  authenticate,
-  fetchDashboard,
-  fetchPaymentOverview,
-  fetchPaymentTransactions
-} from '../services/api'
+import { fetchDashboard, fetchPaymentOverview, fetchPaymentTransactions } from '../services/api'
 import type { DashboardMetrics, PaymentOverview, PaymentTransaction } from '../services/api'
+import { useAuth } from '../contexts/AuthContext'
 
 type HighlightState = 'positivo' | 'negativo' | 'neutro'
 
@@ -17,11 +13,38 @@ const DashboardPage: FC = () => {
   const [paymentTransactions, setPaymentTransactions] = useState<PaymentTransaction[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string>('')
+  const [authReady, setAuthReady] = useState<boolean>(false)
+  const { isAdmin, login, isLoading: authLoading } = useAuth()
 
   useEffect(() => {
-    const load = async (): Promise<void> => {
+    if (authReady) {
+      return
+    }
+
+    const ensureAdminSession = async (): Promise<void> => {
       try {
-        await authenticate({ email: 'admin@davidstore.com', password: 'admin123' })
+        if (!isAdmin) {
+          await login({ email: 'admin@davidstore.com', password: 'admin123' })
+        }
+        setAuthReady(true)
+      } catch (err) {
+        console.error('Erro ao autenticar administrador:', err)
+        setError('Não foi possível autenticar o administrador do painel.')
+        setLoading(false)
+      }
+    }
+
+    void ensureAdminSession()
+  }, [authReady, isAdmin, login])
+
+  useEffect(() => {
+    if (!authReady || !isAdmin) {
+      return
+    }
+
+    const loadDashboard = async (): Promise<void> => {
+      setLoading(true)
+      try {
         const [dashboardResponse, paymentResponse, transactionsResponse] = await Promise.all([
           fetchDashboard(),
           fetchPaymentOverview(),
@@ -47,10 +70,11 @@ const DashboardPage: FC = () => {
         setLoading(false)
       }
     }
-    load()
-  }, [])
 
-  if (loading) {
+    void loadDashboard()
+  }, [authReady, isAdmin])
+
+  if (loading || authLoading) {
     return (
       <section className="container" style={{ padding: '2rem 0 4rem' }}>
         <p>Carregando painel inteligente da David Store...</p>

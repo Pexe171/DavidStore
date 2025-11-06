@@ -108,6 +108,7 @@ Há um `.devcontainer/devcontainer.json` configurado. Abra a pasta no VS Code, a
 - **Carrinho inteligente** com resumo, remoção de itens e total dinâmico.
 - **Checkout humanizado** com formulário validado e envio de pedido para a API.
 - **Painel administrativo** com autenticação automática, KPIs e monitoramento de estoque crítico.
+- **Contexto global de autenticação** no frontend, facilitando a proteção de rotas e o gerenciamento da sessão JWT.
 - **Dashboard financeiro David Pay** com visão completa do gateway de pagamento, taxa de aprovação, agenda de liquidação e alertas de risco.
 
 ### Painel financeiro em detalhes
