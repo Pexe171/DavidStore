@@ -8,15 +8,16 @@ datasource db {
 }
 
 model User {
-  id        String    @id @default(cuid())
-  name      String
-  email     String    @unique
-  password  String
-  role      String
-  addresses Address[]
-  orders    Order[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id             String         @id @default(cuid())
+  name           String
+  email          String         @unique
+  password       String
+  role           String
+  addresses      Address[]
+  orders         Order[]
+  refreshTokens  RefreshToken[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 }
 
 model Address {
@@ -59,18 +60,18 @@ model Product {
 }
 
 model Order {
-  id            String      @id @default(cuid())
-  status        String
-  total         Decimal     @db.Numeric(12, 2)
-  customer      User?       @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  customerId    String?
-  customerReference String?
-  customerName  String
-  customerEmail String
-  items         OrderItem[]
-  payment       Payment?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id                 String      @id @default(cuid())
+  status             String
+  total              Decimal     @db.Numeric(12, 2)
+  customer           User?       @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customerId         String?
+  customerReference  String?
+  customerName       String
+  customerEmail      String
+  items              OrderItem[]
+  payment            Payment?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
 }
 
 model OrderItem {
@@ -102,4 +103,18 @@ model Payment {
   createdAt        DateTime @default(now())
   authorizedAt     DateTime?
   capturedAt       DateTime?
+}
+
+model RefreshToken {
+  id                  String   @id @default(cuid())
+  tokenHash           String   @unique
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId              String
+  expiresAt           DateTime
+  revokedAt           DateTime?
+  revokedReason       String?
+  replacedByTokenHash String?
+  ipAddress           String?
+  userAgent           String?
+  createdAt           DateTime @default(now())
 }

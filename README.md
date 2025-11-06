@@ -28,7 +28,7 @@ DavidStore/
 
 ### Opção 1 — stack completa com Docker Compose
 
-1. Copie as variáveis de ambiente base: `cp backend/.env.example backend/.env` (ajuste o `JWT_SECRET` se quiser algo mais forte).
+1. Copie as variáveis de ambiente base: `cp backend/.env.example backend/.env` (ajuste os segredos `JWT_SECRET_PRIMARY`/`JWT_SECRET_SECONDARY` para reforçar a rotação de chaves).
 2. Suba toda a stack: `docker compose up --build`.
 3. Popular o banco com os dados de demonstração: `docker compose exec backend npm run db:seed`.
 
@@ -65,6 +65,20 @@ Credenciais padrão para explorar o painel administrativo:
    ```
 
 > 💡 Para criar novas migrations durante o desenvolvimento, utilize `npm run migrate:dev -- --name <descricao>` no diretório `backend`.
+
+### Segurança aplicada na API
+
+A camada de backend recebeu reforços de segurança completos:
+
+- **Validação de entrada com Zod** em todos os fluxos sensíveis, garantindo mensagens humanizadas.
+- **Proteções HTTP** com Helmet, políticas CORS configuráveis via variáveis de ambiente e limitação de payloads JSON.
+- **Rate limiting inteligente** com janelas específicas para autenticação e uso geral.
+- **Autenticação robusta** com refresh tokens persistidos e hashed no banco, detectando reutilização indevida e permitindo logout seguro.
+- **Rotação automática de chaves JWT** com identificação (`kid`) embutida no token e intervalo configurável.
+- **Cookies HttpOnly** para o refresh token (com fallback via corpo da requisição), facilitando aplicações SPA e mobile.
+
+> Configure `CORS_ALLOWED_ORIGINS`, `RATE_LIMIT_*`, `JWT_ROTATION_INTERVAL_MINUTES` e `JWT_REFRESH_EXPIRES_IN_MS` para ajustar o comportamento em produção.
+
 
 ### Qualidade de código e testes
 
