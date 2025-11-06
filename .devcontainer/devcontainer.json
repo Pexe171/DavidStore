@@ -1,0 +1,18 @@
+{
+  "name": "David Store",
+  "dockerComposeFile": ["../docker-compose.yml"],
+  "service": "backend",
+  "workspaceFolder": "/workspace",
+  "overrideCommand": false,
+  "waitFor": "onCreateCommand",
+  "postCreateCommand": "cd backend && npm install && npm run prisma:generate && cd ../frontend && npm install",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    }
+  },
+  "forwardPorts": [4000, 5173],
+  "remoteEnv": {
+    "DATABASE_URL": "postgresql://david:david@db:5432/davidstore?schema=public"
+  }
+}

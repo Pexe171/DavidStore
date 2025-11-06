@@ -8,45 +8,61 @@ import {
 } from '../services/productService.js'
 import { toPresentationProduct } from '../utils/formatters.js'
 
-export const getProducts = (req, res) => {
-  const { categoria: category, busca: search } = req.query
-  const result = listProducts({ category, search }).map(toPresentationProduct)
-  res.json(result)
-}
-
-export const getProduct = (req, res) => {
-  const product = getProductById(req.params.id)
-  if (!product) {
-    return res.status(404).json({ message: 'Produto não encontrado.' })
+export const getProducts = async (req, res, next) => {
+  try {
+    const { categoria: category, busca: search } = req.query
+    const products = await listProducts({ category, search })
+    res.json(products.map(toPresentationProduct))
+  } catch (error) {
+    next(error)
   }
-  res.json(toPresentationProduct(product))
 }
 
-export const createProduct = (req, res) => {
+export const getProduct = async (req, res, next) => {
+  try {
+    const product = await getProductById(req.params.id)
+    if (!product) {
+      return res.status(404).json({ message: 'Produto não encontrado.' })
+    }
+    res.json(toPresentationProduct(product))
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const createProduct = async (req, res, next) => {
   const errors = validationResult(req)
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() })
   }
   try {
-    const payload = addProduct(req.body)
+    const payload = await addProduct(req.body)
     res.status(201).json(toPresentationProduct(payload))
   } catch (error) {
-    res.status(400).json({ message: error.message })
+    next(error)
   }
 }
 
-export const updateProductController = (req, res) => {
-  const updated = updateProduct(req.params.id, req.body)
-  if (!updated) {
-    return res.status(404).json({ message: 'Produto não encontrado.' })
+export const updateProductController = async (req, res, next) => {
+  try {
+    const updated = await updateProduct(req.params.id, req.body)
+    if (!updated) {
+      return res.status(404).json({ message: 'Produto não encontrado.' })
+    }
+    res.json(toPresentationProduct(updated))
+  } catch (error) {
+    next(error)
   }
-  res.json(toPresentationProduct(updated))
 }
 
-export const removeProduct = (req, res) => {
-  const removed = deleteProduct(req.params.id)
-  if (!removed) {
-    return res.status(404).json({ message: 'Produto não encontrado.' })
+export const removeProduct = async (req, res, next) => {
+  try {
+    const removed = await deleteProduct(req.params.id)
+    if (!removed) {
+      return res.status(404).json({ message: 'Produto não encontrado.' })
+    }
+    res.status(204).send()
+  } catch (error) {
+    next(error)
   }
-  res.status(204).send()
 }

@@ -1,0 +1,60 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: davidstore-db
+    environment:
+      POSTGRES_USER: david
+      POSTGRES_PASSWORD: david
+      POSTGRES_DB: davidstore
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U david']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    container_name: davidstore-backend
+    command: sh -c "npm install && npm run prisma:generate && npm run migrate:deploy && npm run dev"
+    environment:
+      DATABASE_URL: postgresql://david:david@db:5432/davidstore?schema=public
+      PORT: 4000
+      JWT_SECRET: desenvolvimento-super-seguro
+      NODE_ENV: development
+    ports:
+      - '4000:4000'
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - backend_node_modules:/app/node_modules
+      - .:/workspace
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: davidstore-frontend
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 5173"
+    environment:
+      VITE_API_URL: http://localhost:4000
+    ports:
+      - '5173:5173'
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+      - .:/workspace
+
+volumes:
+  postgres_data:
+  backend_node_modules:
+  frontend_node_modules:

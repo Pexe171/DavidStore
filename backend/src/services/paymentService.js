@@ -1,14 +1,14 @@
-import { payments } from '../data/payments.js'
+import prisma from '../lib/prisma.js'
+import { decimalToNumber, decimalToNumberOrZero } from '../utils/prisma.js'
 
-const toNumber = (value) => Number(value ?? 0)
-const parseDate = (value) => (value ? new Date(value) : null)
-const daysBetween = (start, end) => {
-  if (!start || !end) return null
-  const diffMs = end.getTime() - start.getTime()
-  return diffMs > 0 ? diffMs / (1000 * 60 * 60 * 24) : 0
+const toNumber = (value) => decimalToNumberOrZero(value)
+const toNullableNumber = (value) => {
+  const parsed = decimalToNumber(value)
+  return parsed === null ? null : parsed
 }
+const toIso = (value) => (value ? value.toISOString() : null)
 
-const computeBaseStats = () => {
+const computeBaseStats = (payments) => {
   const totalVolume = payments.reduce((acc, payment) => acc + toNumber(payment.amount), 0)
   const totalNet = payments.reduce((acc, payment) => acc + toNumber(payment.netAmount), 0)
   const approved = payments.filter((payment) => payment.status === 'capturado')
@@ -21,7 +21,11 @@ const computeBaseStats = () => {
     : 0
 
   const settlementDurations = approved
-    .map((payment) => daysBetween(parseDate(payment.capturedAt), parseDate(payment.settlementDate)))
+    .map((payment) => {
+      if (!payment.capturedAt || !payment.settlementDate) return null
+      const diffMs = new Date(payment.settlementDate).getTime() - new Date(payment.capturedAt).getTime()
+      return diffMs > 0 ? diffMs / (1000 * 60 * 60 * 24) : 0
+    })
     .filter((value) => value !== null)
   const averageSettlement = settlementDurations.length
     ? settlementDurations.reduce((acc, days) => acc + days, 0) / settlementDurations.length
@@ -47,7 +51,7 @@ const computeBaseStats = () => {
   }, {})
 
   const riskAlerts = payments
-    .filter((payment) => payment.chargeback || payment.status === 'em_analise' || payment.riskScore >= 0.6)
+    .filter((payment) => payment.chargeback || payment.status === 'em_analise' || (payment.riskScore ?? 0) >= 0.6)
     .map((payment) => ({
       id: payment.id,
       orderId: payment.orderId,
@@ -59,8 +63,8 @@ const computeBaseStats = () => {
         payment.chargeback
           ? 'Chargeback em andamento: necessário contato com adquirente.'
           : payment.status === 'em_analise'
-          ? 'Transação em análise manual pela equipe antifraude.'
-          : 'Pontuação de risco alta detectada pelo motor antifraude.'
+            ? 'Transação em análise manual pela equipe antifraude.'
+            : 'Pontuação de risco alta detectada pelo motor antifraude.'
     }))
 
   const settlementPipeline = approved
@@ -77,12 +81,14 @@ const computeBaseStats = () => {
   const processingTimeline = approved.map((payment) => ({
     id: payment.id,
     orderId: payment.orderId,
-    authorizationSeconds: payment.authorizedAt
-      ? (parseDate(payment.authorizedAt).getTime() - parseDate(payment.createdAt).getTime()) / 1000
-      : null,
-    captureSeconds: payment.capturedAt && payment.authorizedAt
-      ? (parseDate(payment.capturedAt).getTime() - parseDate(payment.authorizedAt).getTime()) / 1000
-      : null
+    authorizationSeconds:
+      payment.authorizedAt && payment.createdAt
+        ? (new Date(payment.authorizedAt).getTime() - new Date(payment.createdAt).getTime()) / 1000
+        : null,
+    captureSeconds:
+      payment.capturedAt && payment.authorizedAt
+        ? (new Date(payment.capturedAt).getTime() - new Date(payment.authorizedAt).getTime()) / 1000
+        : null
   }))
 
   return {
@@ -100,25 +106,47 @@ const computeBaseStats = () => {
   }
 }
 
-export const listPayments = ({ status, method, limit } = {}) => {
-  let result = [...payments]
-  if (status) {
-    result = result.filter((payment) => payment.status === status)
-  }
-  if (method) {
-    result = result.filter((payment) => payment.method === method)
-  }
-  result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-  if (limit) {
-    result = result.slice(0, Number(limit))
-  }
-  return result
+const mapPayment = (payment) => ({
+  id: payment.id,
+  orderId: payment.orderId,
+  method: payment.method,
+  cardBrand: payment.cardBrand,
+  status: payment.status,
+  amount: toNumber(payment.amount),
+  netAmount: toNullableNumber(payment.netAmount),
+  installments: payment.installments,
+  gatewayFees: toNullableNumber(payment.gatewayFees),
+  riskScore: toNullableNumber(payment.riskScore),
+  chargeback: payment.chargeback,
+  settlementDate: toIso(payment.settlementDate),
+  settlementStatus: payment.settlementStatus,
+  customerName: payment.customerName,
+  createdAt: toIso(payment.createdAt),
+  authorizedAt: toIso(payment.authorizedAt),
+  capturedAt: toIso(payment.capturedAt)
+})
+
+const fetchPayments = async ({ status, method, limit } = {}) => {
+  const where = {}
+  if (status) where.status = status
+  if (method) where.method = method
+
+  const payments = await prisma.payment.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+    take: limit ? Number(limit) : undefined
+  })
+
+  return payments.map(mapPayment)
 }
 
-export const getPaymentById = (id) => payments.find((payment) => payment.id === id)
+export const listPayments = async (filters = {}) => fetchPayments(filters)
 
-export const getPaymentOverview = () => {
-  const stats = computeBaseStats()
+export const getPaymentOverview = async () => {
+  const payments = await fetchPayments()
+  const stats = computeBaseStats(payments)
+  const recent = await fetchPayments({ limit: 8 })
+
   return {
     kpis: {
       volumeBruto: stats.totalVolume,
@@ -138,12 +166,13 @@ export const getPaymentOverview = () => {
     alertas: stats.riskAlerts,
     agendaLiquidacoes: stats.settlementPipeline,
     temposProcessamento: stats.processingTimeline,
-    transacoesRecentes: listPayments({ limit: 8 })
+    transacoesRecentes: recent
   }
 }
 
-export const getPaymentSummary = () => {
-  const stats = computeBaseStats()
+export const getPaymentSummary = async () => {
+  const payments = await fetchPayments()
+  const stats = computeBaseStats(payments)
   return {
     volumeBruto: stats.totalVolume,
     taxaAprovacao: stats.approvalRate,

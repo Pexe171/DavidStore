@@ -6,7 +6,7 @@ Aplicação completa de e-commerce inspirada no padrão Casas Bahia, com vitrine
 
 O projeto é composto por duas aplicações:
 
-- **Backend (Node.js + Express):** expõe APIs para produtos, categorias, pedidos, autenticação JWT e métricas do painel.
+- **Backend (Node.js + Express + Prisma/PostgreSQL):** expõe APIs para produtos, categorias, pedidos, autenticação JWT e métricas do painel, agora com persistência real e migrations versionadas.
 - **Frontend (React + Vite):** oferece a experiência David Store para clientes e administradores, incluindo vitrine, carrinho, checkout e dashboard.
 
 ## Estrutura de pastas
@@ -23,38 +23,58 @@ DavidStore/
 
 - Node.js 18+
 - npm ou yarn
+- Docker + Docker Compose (opcional, mas recomendado para um onboarding turbo)
+- PostgreSQL 16+ (apenas se você preferir rodar tudo manualmente)
 
-### Backend
+### Opção 1 — stack completa com Docker Compose
 
-```bash
-cd backend
-npm install
-npm run dev
-```
+1. Copie as variáveis de ambiente base: `cp backend/.env.example backend/.env` (ajuste o `JWT_SECRET` se quiser algo mais forte).
+2. Suba toda a stack: `docker compose up --build`.
+3. Popular o banco com os dados de demonstração: `docker compose exec backend npm run db:seed`.
 
-A API ficará disponível em `http://localhost:4000`.
+Pronto! A API responde em `http://localhost:4000` e o frontend em `http://localhost:5173`.
 
-Credenciais padrão para o painel:
+Credenciais padrão para explorar o painel administrativo:
 
 - E-mail: `admin@davidstore.com`
 - Senha: `admin123`
+
+### Opção 2 — rodando manualmente (sem Docker)
+
+1. Garanta um PostgreSQL rodando e crie um banco chamado `davidstore`.
+2. Copie o `.env` do backend e ajuste o `DATABASE_URL` se necessário:
+
+   ```bash
+   cd backend
+   cp .env.example .env
+   npm install
+   npm run migrate:deploy
+   npm run db:seed
+   npm run dev
+   ```
+
+   A API ficará disponível em `http://localhost:4000`.
+
+3. Em outro terminal, suba o frontend:
+
+   ```bash
+   cd frontend
+   npm install
+   cp .env.example .env
+   npm run dev
+   ```
+
+> 💡 Para criar novas migrations durante o desenvolvimento, utilize `npm run migrate:dev -- --name <descricao>` no diretório `backend`.
+
+### Dev Container (VS Code)
+
+Há um `.devcontainer/devcontainer.json` configurado. Abra a pasta no VS Code, aceite a sugestão "Reopen in Container" e aguarde o provisioning: Docker, banco, dependências e scripts já sobem prontos para você focar no código.
 
 #### Endpoints de destaque
 
 - `GET /dashboard`: KPIs de vendas, estoque crítico e resumo financeiro do gateway.
 - `GET /gateway/overview`: visão 360º do David Pay com volume bruto, líquido, métodos e alertas.
 - `GET /gateway/transacoes`: lista transacional com filtros por status e método (`?status=capturado&method=pix`).
-
-### Frontend
-
-```bash
-cd frontend
-npm install
-cp .env.example .env
-npm run dev
-```
-
-O aplicativo web ficará disponível em `http://localhost:5173`.
 
 ## Recursos principais
 
@@ -72,11 +92,11 @@ O aplicativo web ficará disponível em `http://localhost:5173`.
 - Alertas inteligentes de risco, chargeback e revisão antifraude com contexto do cliente.
 - Agenda de liquidações futuras e acompanhamento do tempo de autorização/captura.
 - Lista de transações recentes com filtros por método e status via API dedicada.
-- **API estruturada** por camadas (controllers, services, middleware) com dados mockados e prontos para expansão.
+- **API estruturada** por camadas (controllers, services, middleware) com persistência real em PostgreSQL/Prisma e pronta para escalar.
 
 ## Próximos passos sugeridos
 
-- Persistência real em banco de dados (PostgreSQL ou MongoDB).
+- Pipeline de CI com testes, lint e checagem de migrations automatizada.
 - Integração com provedores de pagamento e logística.
 - Testes automatizados end-to-end com Playwright ou Cypress.
 - Internacionalização e acessibilidade aprimoradas.
