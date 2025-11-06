@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import Link from 'next/link'
 import type { FC } from 'react'
 
 const Hero: FC = () => {
@@ -16,17 +16,18 @@ const Hero: FC = () => {
       <div>
         <span className="badge">Lançamento exclusivo</span>
         <h1 style={{ fontSize: '3rem', margin: '1rem 0', lineHeight: 1.1 }}>
-          David Store<br />
+          David Store
+          <br />
           Tecnologia, casa e experiência premium em um só lugar.
         </h1>
         <p style={{ fontSize: '1.125rem', color: '#475569', marginBottom: '2rem' }}>
           Descubra ofertas inteligentes com IA, frete relâmpago e atendimento humanizado 24/7.
         </p>
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-          <Link to="/" className="btn-primary">
+          <Link href="/" className="btn-primary">
             Explorar ofertas
           </Link>
-          <Link to="/painel" className="btn-primary" style={{ background: '#1f2937' }}>
+          <Link href="/painel" className="btn-primary" style={{ background: '#1f2937' }}>
             Acessar Painel Pro
           </Link>
         </div>

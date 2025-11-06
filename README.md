@@ -7,7 +7,7 @@ Aplicação completa de e-commerce inspirada no padrão Casas Bahia, com vitrine
 O projeto é composto por duas aplicações:
 
 - **Backend (Node.js + Express + Prisma/PostgreSQL):** expõe APIs para produtos, categorias, pedidos, autenticação JWT e métricas do painel, agora com persistência real e migrations versionadas.
-- **Frontend (React + Vite + TypeScript):** oferece a experiência David Store para clientes e administradores, incluindo vitrine, carrinho, checkout e dashboard.
+- **Frontend (Next.js + SSR/SSG + TypeScript):** entrega HTML pré-renderizado para homepage e detalhes de produto, garantindo vitrine veloz, carrinho, checkout e dashboard em uma experiência David Store completa.
 
 ### Arquitetura orientada a eventos e pronta para escalar
 
@@ -29,7 +29,7 @@ O projeto é composto por duas aplicações:
 ```
 DavidStore/
 ├── backend/          # API REST com autenticação e painel administrativo
-├── frontend/         # SPA em React consumindo a API e exibindo a loja
+├── frontend/         # Frontend em Next.js com SSR/SSG e testes de acessibilidade
 └── shared/types/     # Pacote de esquemas Zod compartilhados (workspace)
 ```
 
@@ -50,7 +50,7 @@ DavidStore/
 2. Suba toda a stack: `docker compose up --build`.
 3. Popular o banco com os dados de demonstração: `docker compose exec backend npm run --workspace backend db:seed`.
 
-Pronto! A API responde em `http://localhost:4000` e o frontend em `http://localhost:5173`.
+Pronto! A API responde em `http://localhost:4000` e o frontend em `http://localhost:3000`.
 
 Credenciais padrão para explorar o painel administrativo:
 
@@ -78,6 +78,8 @@ Credenciais padrão para explorar o painel administrativo:
    npm run --workspace frontend dev
    ```
 
+   O Next.js atenderá em `http://localhost:3000`. Ajuste `NEXT_PUBLIC_API_URL` se quiser apontar para outra origem da API.
+
 > 💡 Para criar novas migrations durante o desenvolvimento, utilize `npm run migrate:dev -- --name <descricao>` no diretório `backend`.
 
 ### Segurança aplicada na API
@@ -100,7 +102,7 @@ A camada de backend recebeu reforços de segurança completos:
 O frontend agora conta com uma esteira completa de qualidade:
 
 - TypeScript com `npm run typecheck` e ESLint + Prettier (`npm run lint` / `npm run format`).
-- Testes unitários com Vitest + Testing Library (`npm test`).
+- Testes unitários com Jest + Testing Library e auditoria de acessibilidade via jest-axe (`npm test`).
 - Testes end-to-end com Playwright (`npm run test:e2e`).
 - Workflow de CI (`.github/workflows/ci.yml`) que automatiza lint, type-check, unit tests e E2E.
 
@@ -121,6 +123,7 @@ Há um `.devcontainer/devcontainer.json` configurado. Abra a pasta no VS Code, a
 ## Recursos principais
 
 - **Vitrine responsiva** com filtros por categoria, destaques e cards ricos.
+- **SSR/SSG com Next.js** garantindo TTFB baixo na Home e páginas de produto, favorecendo SEO e performance.
 - **Detalhes completos do produto** com galerias, benefícios e preços promocionais.
 - **Carrinho inteligente** com resumo, remoção de itens e total dinâmico.
 - **Checkout humanizado** com formulário validado e envio de pedido para a API.

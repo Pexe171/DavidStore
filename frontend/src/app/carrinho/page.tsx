@@ -1,8 +1,10 @@
-import type { FC } from 'react'
+import CartSummary from '@/components/CartSummary'
 
-import CartSummary from '../components/CartSummary'
+export const metadata = {
+  title: 'Carrinho - David Store'
+}
 
-const CartPage: FC = () => {
+const CartPage = (): JSX.Element => {
   return (
     <section className="container" style={{ padding: '2rem 0 4rem' }}>
       <CartSummary />

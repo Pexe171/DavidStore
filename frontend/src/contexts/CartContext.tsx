@@ -1,7 +1,9 @@
+'use client'
+
 import { createContext, useContext, useMemo, useReducer } from 'react'
 import type { FC, ReactNode } from 'react'
 
-import type { Product } from '../services/api'
+import type { Product } from '@/services/api'
 
 type ProductSummary = Pick<Product, 'id' | 'name' | 'images' | 'finalPrice'>
 
