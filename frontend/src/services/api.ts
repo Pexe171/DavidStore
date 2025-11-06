@@ -125,8 +125,16 @@ export const fetchCategories = async (): Promise<Category[]> => {
 
 export const authenticate = async (credentials: { email: string; password: string }): Promise<AuthResponse> => {
   const { data } = await api.post<AuthResponse>('/auth/login', credentials)
-  api.defaults.headers.common.Authorization = `Bearer ${data.token}`
   return data
+}
+
+export const setAuthToken = (token?: string): void => {
+  if (token) {
+    api.defaults.headers.common.Authorization = `Bearer ${token}`
+    return
+  }
+
+  delete api.defaults.headers.common.Authorization
 }
 
 export const fetchDashboard = async (): Promise<DashboardMetrics> => {

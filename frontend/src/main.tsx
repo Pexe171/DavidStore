@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 
 import App from './App'
 import { CartProvider } from './contexts/CartContext'
+import { AuthProvider } from './contexts/AuthContext'
 import './styles/global.css'
 
 const rootElement = document.getElementById('root')
@@ -15,9 +16,11 @@ if (!rootElement) {
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <BrowserRouter>
-      <CartProvider>
-        <App />
-      </CartProvider>
+      <AuthProvider>
+        <CartProvider>
+          <App />
+        </CartProvider>
+      </AuthProvider>
     </BrowserRouter>
   </React.StrictMode>
 )
