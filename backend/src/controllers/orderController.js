@@ -1,4 +1,3 @@
-import { validationResult } from 'express-validator'
 import {
   listOrders,
   getOrderById,
@@ -28,10 +27,6 @@ export const getOrder = async (req, res, next) => {
 }
 
 export const postOrder = async (req, res, next) => {
-  const errors = validationResult(req)
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() })
-  }
   try {
     const order = await createOrder(req.body)
     res.status(201).json(order)
