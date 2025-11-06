@@ -1,6 +1,59 @@
 import prisma from '../lib/prisma.js'
+import redisClient, { deleteKeysByPattern, isRedisEnabled } from '../lib/redis.js'
+import config from '../../config/default.js'
 import { NotFoundError } from '../utils/errors.js'
 import { decimalToNumber, toDecimal } from '../utils/prisma.js'
+
+const {
+  cache: {
+    products: { enabled: isProductCacheEnabled, ttlSeconds: productCacheTtl }
+  }
+} = config
+
+const PRODUCT_CACHE_ENABLED = Boolean(isProductCacheEnabled) && isRedisEnabled()
+const PRODUCT_CACHE_TTL_SECONDS = productCacheTtl || 60
+
+const productCacheKey = (id) => `products:item:${id}`
+const productListCacheKey = ({ category, search }) =>
+  `products:list:${category ?? 'all'}:${search ?? 'all'}`
+
+const cacheResponse = async (key, payload) => {
+  if (!PRODUCT_CACHE_ENABLED) {
+    return
+  }
+
+  try {
+    await redisClient.set(key, JSON.stringify(payload), 'EX', PRODUCT_CACHE_TTL_SECONDS)
+  } catch (error) {
+    // Cache é auxiliar; erros não devem impactar a resposta principal.
+  }
+}
+
+const readCache = async (key) => {
+  if (!PRODUCT_CACHE_ENABLED) {
+    return null
+  }
+
+  try {
+    const cached = await redisClient.get(key)
+    return cached ? JSON.parse(cached) : null
+  } catch (error) {
+    return null
+  }
+}
+
+const invalidateProductCache = async (id) => {
+  if (!PRODUCT_CACHE_ENABLED) {
+    return
+  }
+
+  try {
+    await redisClient.del(productCacheKey(id))
+    await deleteKeysByPattern('products:list:*')
+  } catch (error) {
+    // Falha na limpeza do cache não deve impedir a operação principal.
+  }
+}
 
 const mapProduct = (product) => ({
   id: product.id,
@@ -22,6 +75,12 @@ const mapProduct = (product) => ({
 })
 
 export const listProducts = async ({ category, search } = {}) => {
+  const cacheKey = productListCacheKey({ category, search })
+  const cached = await readCache(cacheKey)
+  if (cached) {
+    return cached
+  }
+
   const where = {}
   if (category) {
     where.categoryId = category
@@ -37,15 +96,25 @@ export const listProducts = async ({ category, search } = {}) => {
     where,
     orderBy: { name: 'asc' }
   })
-  return result.map(mapProduct)
+  const mapped = result.map(mapProduct)
+  await cacheResponse(cacheKey, mapped)
+  return mapped
 }
 
 export const getProductById = async (id) => {
+  const cacheKey = productCacheKey(id)
+  const cached = await readCache(cacheKey)
+  if (cached) {
+    return cached
+  }
+
   const product = await prisma.product.findUnique({ where: { id } })
   if (!product) {
     throw new NotFoundError('Produto não encontrado.')
   }
-  return mapProduct(product)
+  const mapped = mapProduct(product)
+  await cacheResponse(cacheKey, mapped)
+  return mapped
 }
 
 export const addProduct = async (payload) => {
@@ -73,7 +142,9 @@ export const addProduct = async (payload) => {
       }
     })
 
-    return mapProduct(created)
+    const mapped = mapProduct(created)
+    await invalidateProductCache(created.id)
+    return mapped
   } catch (error) {
     if (error.code === 'P2003') {
       const friendly = new Error('Categoria informada não existe.')
@@ -102,7 +173,9 @@ export const updateProduct = async (id, changes) => {
       where: { id },
       data
     })
-    return mapProduct(updated)
+    const mapped = mapProduct(updated)
+    await invalidateProductCache(id)
+    return mapped
   } catch (error) {
     if (error.code === 'P2025') {
       throw new NotFoundError('Produto não encontrado.')
@@ -119,6 +192,7 @@ export const updateProduct = async (id, changes) => {
 export const deleteProduct = async (id) => {
   try {
     await prisma.product.delete({ where: { id } })
+    await invalidateProductCache(id)
     return true
   } catch (error) {
     if (error.code === 'P2025') {

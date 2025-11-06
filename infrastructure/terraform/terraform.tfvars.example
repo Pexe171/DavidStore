@@ -1,0 +1,13 @@
+aws_region             = "us-east-1"
+project_name           = "davidstore"
+environment            = "staging"
+public_subnet_az       = "us-east-1a"
+private_subnet_az      = "us-east-1a"
+backend_ami            = "ami-1234567890abcdef0"
+backend_docker_image   = "123456789012.dkr.ecr.us-east-1.amazonaws.com/davidstore-backend:latest"
+postgres_username      = "david"
+postgres_password      = "mude-esta-senha"
+redis_node_type        = "cache.t3.small"
+postgres_instance_class = "db.t3.small"
+ssh_key_name           = "davidstore-key"
+product_cache_ttl_seconds = 60

@@ -21,11 +21,18 @@ export default {
     rateLimit: {
       global: {
         windowMs: Number(process.env.RATE_LIMIT_GLOBAL_WINDOW_MS) || 15 * 60 * 1000,
-        max: Number(process.env.RATE_LIMIT_GLOBAL_MAX) || 100
+        max: Number(process.env.RATE_LIMIT_GLOBAL_MAX) || 100,
+        blockDurationSeconds:
+          Number(process.env.RATE_LIMIT_GLOBAL_BLOCK_DURATION_SECONDS) || 60
       },
       auth: {
         windowMs: Number(process.env.RATE_LIMIT_AUTH_WINDOW_MS) || 15 * 60 * 1000,
-        max: Number(process.env.RATE_LIMIT_AUTH_MAX) || 10
+        max: Number(process.env.RATE_LIMIT_AUTH_MAX) || 10,
+        blockDurationSeconds:
+          Number(process.env.RATE_LIMIT_AUTH_BLOCK_DURATION_SECONDS) || 120
+      },
+      redis: {
+        prefix: process.env.RATE_LIMIT_REDIS_PREFIX || 'rate-limit'
       }
     },
     jwt: {
@@ -62,6 +69,20 @@ export default {
         }
         return initialKeys
       })()
+    }
+  },
+  cache: {
+    redis: {
+      enabled: process.env.REDIS_ENABLED !== 'false',
+      url: process.env.REDIS_URL,
+      host: process.env.REDIS_HOST || 'localhost',
+      port: Number(process.env.REDIS_PORT) || 6379,
+      password: process.env.REDIS_PASSWORD,
+      tls: process.env.REDIS_TLS === 'true'
+    },
+    products: {
+      enabled: process.env.PRODUCT_CACHE_ENABLED !== 'false',
+      ttlSeconds: Number(process.env.PRODUCT_CACHE_TTL_SECONDS) || 60
     }
   },
   observability: {
