@@ -1,5 +1,11 @@
-import { categories } from '../data/categories.js'
+import prisma from '../lib/prisma.js'
 
-export const listCategories = () => categories
+export const listCategories = async () => {
+  return prisma.category.findMany({
+    orderBy: { name: 'asc' }
+  })
+}
 
-export const getCategoryById = (id) => categories.find((category) => category.id === id)
+export const getCategoryById = async (id) => {
+  return prisma.category.findUnique({ where: { id } })
+}

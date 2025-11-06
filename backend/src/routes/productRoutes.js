@@ -17,6 +17,7 @@ const productValidation = [
   body('price').isFloat({ gt: 0 }).withMessage('Preço deve ser maior que zero.'),
   body('discount').isFloat({ min: 0, max: 1 }).withMessage('Desconto deve estar entre 0 e 1.'),
   body('stock').isInt({ min: 0 }).withMessage('Estoque deve ser um número inteiro positivo.'),
+  body('brand').notEmpty().withMessage('Marca é obrigatória.'),
   body('category').notEmpty().withMessage('Categoria é obrigatória.')
 ]
 

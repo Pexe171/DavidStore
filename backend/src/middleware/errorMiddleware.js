@@ -4,5 +4,6 @@ export const notFoundHandler = (req, res, next) => {
 
 export const errorHandler = (error, req, res, next) => {
   console.error('Erro capturado:', error)
-  res.status(500).json({ message: error.message || 'Erro interno no servidor.' })
+  const status = error.statusCode || 500
+  res.status(status).json({ message: error.message || 'Erro interno no servidor.' })
 }

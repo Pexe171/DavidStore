@@ -1,10 +1,10 @@
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
-import { users } from '../data/users.js'
 import config from '../../config/default.js'
+import prisma from '../lib/prisma.js'
 
 export const authenticate = async (email, password) => {
-  const user = users.find((candidate) => candidate.email === email)
+  const user = await prisma.user.findUnique({ where: { email } })
   if (!user) {
     return null
   }
@@ -27,20 +27,19 @@ export const authenticate = async (email, password) => {
 }
 
 export const register = async ({ name, email, password }) => {
-  const exists = users.some((candidate) => candidate.email === email)
+  const exists = await prisma.user.findUnique({ where: { email } })
   if (exists) {
     throw new Error('E-mail já cadastrado.')
   }
   const hash = await bcrypt.hash(password, config.security.saltRounds)
-  const newUser = {
-    id: `user-${users.length + 1}`,
-    name,
-    email,
-    password: hash,
-    role: 'customer',
-    addresses: []
-  }
-  users.push(newUser)
+  const newUser = await prisma.user.create({
+    data: {
+      name,
+      email,
+      password: hash,
+      role: 'customer'
+    }
+  })
   return {
     id: newUser.id,
     name: newUser.name,
