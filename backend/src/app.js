@@ -1,8 +1,9 @@
 import express from 'express'
 import cors from 'cors'
-import morgan from 'morgan'
+import pinoHttp from 'pino-http'
 import helmet from 'helmet'
 import cookieParser from 'cookie-parser'
+import { context, trace } from '@opentelemetry/api'
 import config from '../config/default.js'
 import productRoutes from './routes/productRoutes.js'
 import categoryRoutes from './routes/categoryRoutes.js'
@@ -12,6 +13,7 @@ import dashboardRoutes from './routes/dashboardRoutes.js'
 import paymentRoutes from './routes/paymentRoutes.js'
 import { globalRateLimiter } from './middleware/rateLimiter.js'
 import { notFoundHandler, errorHandler } from './middleware/errorMiddleware.js'
+import logger from './lib/logger.js'
 
 const app = express()
 
@@ -28,6 +30,22 @@ const corsOptions = {
   credentials: config.security.cors.credentials
 }
 
+const httpLogger = pinoHttp({
+  logger,
+  customProps: () => {
+    const span = trace.getSpan(context.active())
+    if (!span) {
+      return {}
+    }
+    const spanContext = span.spanContext()
+    return {
+      traceId: spanContext.traceId,
+      spanId: spanContext.spanId
+    }
+  }
+})
+
+app.use(httpLogger)
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'same-site' },
   contentSecurityPolicy: false
@@ -36,14 +54,13 @@ app.use(cors(corsOptions))
 app.use(cookieParser())
 app.use(express.json({ limit: '10kb' }))
 app.use(express.urlencoded({ extended: true, limit: '10kb' }))
-app.use(morgan('dev'))
 app.use(globalRateLimiter)
 
 app.get('/', (req, res) => {
   res.json({
     message: 'Bem-vindo à API da David Store.',
     docs: '/docs',
-    version: '1.0.0'
+    version: config.app.version
   })
 })
 
