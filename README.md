@@ -11,17 +11,17 @@ O projeto é composto por duas aplicações:
 
 ### Arquitetura orientada a eventos e pronta para escalar
 
-- **Pedidos e David Pay desacoplados:** `createOrder` publica um evento `order.created` em uma fila em memória que simula RabbitMQ/Kafka. O serviço de pagamentos consome esse evento para abrir a intenção de pagamento de forma assíncrona.
+- **Pedidos e David Pay desacoplados:** `createOrder` publica um evento `order.created` diretamente na fila AWS SQS provisionada pelo Terraform. O serviço de pagamentos consome esse evento para abrir a intenção de pagamento de forma assíncrona, sem depender de um broker local.
 - **Fluxo de estoque transacional:** a criação do pedido reserva o estoque (sem baixar do saldo real). Apenas após o evento `payment.captured` o estoque é consumido definitivamente. Em caso de falha (`payment.failed`) a reserva é liberada automaticamente.
 - **Read model dedicado para o dashboard:** métricas e alertas agora são servidos a partir da tabela `DashboardSnapshot`, regenerada em background sempre que pedidos ou pagamentos mudam de status. O painel passa a responder instantaneamente mesmo com alto volume de dados.
-- **Fila plugável:** a implementação atual usa Node EventEmitter como broker em memória, facilitando o swap por RabbitMQ/Kafka/Redis Streams em produção sem alterar o domínio.
+- **Fila plugável:** agora a implementação padrão usa AWS SQS (com fallback opcional em memória via `MESSAGE_QUEUE_DRIVER=in-memory`), mantendo o contrato de eventos estável para futuras trocas por RabbitMQ/Kafka/Redis Streams se necessário.
 
 ### Observabilidade, DX e resiliência de nível sênior
 
 - **Monorepo com tipos compartilhados:** backend, frontend e o pacote `@davidstore/types` vivem no mesmo workspace. Os esquemas Zod usados pela API são publicados e reutilizados no React, eliminando divergências de contrato.
 - **Logs estruturados com Pino:** cada requisição ganha contexto (trace/span ID) e logs padronizados, prontos para ferramentas como ELK ou Datadog.
 - **Tracing distribuído com OpenTelemetry:** a API exporta spans automaticamente (HTTP, Express, fila de eventos) com opção de envio para um collector OTLP. Assim fica simples rastrear uma compra do clique até a captura financeira.
-- **Fila instrumentada e resiliente:** o broker em memória agora gera spans e logs próprios, facilitando a troca por RabbitMQ/Kafka sem perder observabilidade.
+- **Fila instrumentada e resiliente:** o consumer/produtor SQS possui spans e logs estruturados, mantendo rastreabilidade ponta a ponta mesmo em produção.
 - **Dashboard rebuild assíncrono monitorado:** snapshots de métricas são reconstruídos via eventos e registrados em logs/traços, garantindo diagnósticos rápidos em incidentes.
 
 ## Estrutura de pastas
@@ -81,6 +81,17 @@ Credenciais padrão para explorar o painel administrativo:
    O Next.js atenderá em `http://localhost:3000`. Ajuste `NEXT_PUBLIC_API_URL` se quiser apontar para outra origem da API.
 
 > 💡 Para criar novas migrations durante o desenvolvimento, utilize `npm run migrate:dev -- --name <descricao>` no diretório `backend`.
+
+### Fila de eventos (AWS SQS)
+
+A David Store agora publica e consome eventos reais na fila AWS SQS criada pelo Terraform. Configure as variáveis abaixo no `backend/.env` (ou nos parâmetros SSM gerados pela infraestrutura):
+
+- `SQS_QUEUE_URL`: URL da fila retornada pelo `terraform output events_queue_url`.
+- `SQS_REGION`: região onde a fila foi provisionada (ex.: `us-east-1`).
+- `SQS_ENDPOINT` (opcional): endpoint customizado para cenários com LocalStack.
+- `SQS_VISIBILITY_TIMEOUT_SECONDS`, `SQS_WAIT_TIME_SECONDS`, `SQS_MAX_NUMBER_OF_MESSAGES`, `SQS_POLL_INTERVAL_MS` e `SQS_BACKOFF_MS`: tunáveis de consumo.
+
+> Caso ainda não tenha acesso à AWS durante o desenvolvimento local, defina `MESSAGE_QUEUE_DRIVER=in-memory` para manter o comportamento anterior apenas em ambientes de teste.
 
 ### Segurança aplicada na API
 
