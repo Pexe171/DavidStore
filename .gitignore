@@ -1,0 +1,9 @@
+node_modules
+npm-debug.log*
+dist
+.env
+.DS_Store
+.idea
+.vscode
+backend/node_modules
+frontend/node_modules
