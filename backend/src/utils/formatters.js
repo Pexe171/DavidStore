@@ -27,7 +27,10 @@ export const toDashboardMetrics = (orders) => {
   const totalRevenue = orders.reduce((acc, order) => acc + (toNumber(order.total) ?? 0), 0)
   const totalOrders = orders.length
   const averageTicket = totalOrders ? totalRevenue / totalOrders : 0
-  const processingOrders = orders.filter((order) => order.status === 'processando').length
+  const processingOrders = orders.filter((order) =>
+    ['processando', 'capturado'].includes(order.status)
+  ).length
+  const awaitingPayment = orders.filter((order) => order.status === 'aguardando_pagamento').length
   const deliveredOrders = orders.filter((order) => order.status === 'entregue').length
 
   return {
@@ -35,6 +38,7 @@ export const toDashboardMetrics = (orders) => {
     totalOrders,
     averageTicket,
     processingOrders,
+    awaitingPayment,
     deliveredOrders
   }
 }

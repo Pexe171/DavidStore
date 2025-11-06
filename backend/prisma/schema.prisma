@@ -48,6 +48,7 @@ model Product {
   price       Decimal     @db.Numeric(10, 2)
   discount    Decimal     @db.Numeric(5, 4)
   stock       Int
+  reservedStock Int       @default(0)
   brand       String
   rating      Decimal?    @db.Numeric(3, 2)
   highlights  String[]
@@ -103,6 +104,26 @@ model Payment {
   createdAt        DateTime @default(now())
   authorizedAt     DateTime?
   capturedAt       DateTime?
+}
+
+model InventoryReservation {
+  id          String   @id @default(cuid())
+  order       Order?   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId     String   @unique
+  status      String
+  items       Json
+  reservedAt  DateTime @default(now())
+  confirmedAt DateTime?
+  releasedAt  DateTime?
+  revertedAt  DateTime?
+}
+
+model DashboardSnapshot {
+  id              String   @id @default(cuid())
+  metrics         Json
+  lowStock        Json
+  paymentSummary  Json
+  generatedAt     DateTime @default(now())
 }
 
 model RefreshToken {

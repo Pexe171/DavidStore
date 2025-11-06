@@ -3,12 +3,14 @@ import app from './app.js'
 import config from '../config/default.js'
 import prisma from './lib/prisma.js'
 import { scheduleAutomaticRotation } from './lib/jwtKeys.js'
+import { setupMessaging } from './messaging/setupMessaging.js'
 
 const { port, name } = config.app
 
 const start = async () => {
   try {
     await prisma.$connect()
+    setupMessaging()
     const rotationInterval = scheduleAutomaticRotation()
     const server = app.listen(port, () => {
       console.log(`${name} rodando na porta ${port}`)

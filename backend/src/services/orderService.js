@@ -1,7 +1,15 @@
 import { v4 as uuid } from 'uuid'
 import prisma from '../lib/prisma.js'
 import { NotFoundError } from '../utils/errors.js'
+import messageQueue from '../lib/messageQueue.js'
+import EVENTS from '../messaging/events.js'
 import { decimalToNumber, toDecimal } from '../utils/prisma.js'
+import {
+  reserveStockForOrder,
+  confirmReservedStock,
+  releaseReservedStock,
+  revertConfirmedStock
+} from './inventoryService.js'
 
 const mapOrderItem = (item) => ({
   id: item.id,
@@ -111,41 +119,118 @@ export const createOrder = async ({ customer, items }) => {
     customerId = existing ? existing.id : null
   }
 
-  const created = await prisma.order.create({
-    data: {
-      id: orderId,
-      status: 'processando',
-      total: toDecimal(total),
-      customerId,
-      customerReference: customer.id,
-      customerName: customer.name,
-      customerEmail: customer.email,
-      items: {
-        create: detailedItems.map((item) => ({
-          productId: item.productId,
-          quantity: item.quantity,
-          price: toDecimal(item.price)
-        }))
+  const { order, reservation } = await prisma.$transaction(async (tx) => {
+    const created = await tx.order.create({
+      data: {
+        id: orderId,
+        status: 'aguardando_pagamento',
+        total: toDecimal(total),
+        customerId,
+        customerReference: customer.id,
+        customerName: customer.name,
+        customerEmail: customer.email,
+        items: {
+          create: detailedItems.map((item) => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            price: toDecimal(item.price)
+          }))
+        }
+      },
+      include: {
+        items: true,
+        customer: {
+          select: { id: true, name: true, email: true }
+        }
       }
-    },
-    include: {
-      items: true,
-      customer: {
-        select: { id: true, name: true, email: true }
-      }
+    })
+
+    const reservationResult = await reserveStockForOrder({
+      orderId,
+      items: detailedItems,
+      tx
+    })
+
+    return { order: created, reservation: reservationResult }
+  })
+
+  const mapped = mapOrder(order)
+  await messageQueue.publish(EVENTS.ORDER_CREATED, {
+    order: mapped,
+    reservation: {
+      id: reservation.id,
+      status: reservation.status,
+      items: reservation.items
     }
   })
 
-  return mapOrder(created)
+  return mapped
 }
 
-export const updateOrderStatus = async (id, status) => {
+const applyInventoryTransition = async (tx, id, status) => {
+  if (status === 'capturado') {
+    await confirmReservedStock(id, tx)
+    return
+  }
+
+  if (status === 'cancelado') {
+    const released = await releaseReservedStock(id, tx)
+    if (!released) {
+      await revertConfirmedStock(id, tx)
+    }
+  }
+}
+
+const changeOrderStatus = async (id, status, { context, emitEvent = true, skipInventoryActions = false } = {}) => {
   try {
-    await prisma.order.update({
-      where: { id },
-      data: { status }
+    const result = await prisma.$transaction(async (tx) => {
+      const existing = await tx.order.findUnique({
+        where: { id },
+        include: {
+          items: true,
+          customer: {
+            select: { id: true, name: true, email: true }
+          }
+        }
+      })
+
+      if (!existing) {
+        throw new NotFoundError('Pedido não encontrado.')
+      }
+
+      if (existing.status === status) {
+        return { order: existing, previousStatus: existing.status, changed: false }
+      }
+
+      const updated = await tx.order.update({
+        where: { id },
+        data: { status },
+        include: {
+          items: true,
+          customer: {
+            select: { id: true, name: true, email: true }
+          }
+        }
+      })
+
+      if (!skipInventoryActions) {
+        await applyInventoryTransition(tx, id, status)
+      }
+
+      return { order: updated, previousStatus: existing.status, changed: true }
     })
-    return getOrderById(id)
+
+    const mapped = mapOrder(result.order)
+
+    if (emitEvent && result.changed) {
+      await messageQueue.publish(EVENTS.ORDER_STATUS_UPDATED, {
+        order: mapped,
+        previousStatus: result.previousStatus,
+        context: context ?? null
+      })
+    }
+
+    return mapped
   } catch (error) {
     if (error.code === 'P2025') {
       throw new NotFoundError('Pedido não encontrado.')
@@ -153,3 +238,8 @@ export const updateOrderStatus = async (id, status) => {
     throw error
   }
 }
+
+export const updateOrderStatus = async (id, status) =>
+  changeOrderStatus(id, status, { context: { origin: 'api' } })
+
+export const setOrderStatus = (id, status, options = {}) => changeOrderStatus(id, status, options)

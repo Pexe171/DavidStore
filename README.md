@@ -9,6 +9,13 @@ O projeto é composto por duas aplicações:
 - **Backend (Node.js + Express + Prisma/PostgreSQL):** expõe APIs para produtos, categorias, pedidos, autenticação JWT e métricas do painel, agora com persistência real e migrations versionadas.
 - **Frontend (React + Vite + TypeScript):** oferece a experiência David Store para clientes e administradores, incluindo vitrine, carrinho, checkout e dashboard.
 
+### Arquitetura orientada a eventos e pronta para escalar
+
+- **Pedidos e David Pay desacoplados:** `createOrder` publica um evento `order.created` em uma fila em memória que simula RabbitMQ/Kafka. O serviço de pagamentos consome esse evento para abrir a intenção de pagamento de forma assíncrona.
+- **Fluxo de estoque transacional:** a criação do pedido reserva o estoque (sem baixar do saldo real). Apenas após o evento `payment.captured` o estoque é consumido definitivamente. Em caso de falha (`payment.failed`) a reserva é liberada automaticamente.
+- **Read model dedicado para o dashboard:** métricas e alertas agora são servidos a partir da tabela `DashboardSnapshot`, regenerada em background sempre que pedidos ou pagamentos mudam de status. O painel passa a responder instantaneamente mesmo com alto volume de dados.
+- **Fila plugável:** a implementação atual usa Node EventEmitter como broker em memória, facilitando o swap por RabbitMQ/Kafka/Redis Streams em produção sem alterar o domínio.
+
 ## Estrutura de pastas
 
 ```
@@ -48,6 +55,7 @@ Credenciais padrão para explorar o painel administrativo:
    cd backend
    cp .env.example .env
    npm install
+   npm run prisma:generate
    npm run migrate:deploy
    npm run db:seed
    npm run dev
@@ -100,6 +108,8 @@ Há um `.devcontainer/devcontainer.json` configurado. Abra a pasta no VS Code, a
 - `GET /dashboard`: KPIs de vendas, estoque crítico e resumo financeiro do gateway. (Requer role: admin)
 - `GET /gateway/overview`: visão 360º do David Pay com volume bruto, líquido, métodos e alertas. (Requer role: admin)
 - `GET /gateway/transacoes`: lista transacional com filtros por status e método (`?status=capturado&method=pix`). (Requer role: admin)
+- `PATCH /gateway/transacoes/:orderId/capturar`: confirma a captura financeira de um pedido e libera o consumo definitivo do estoque reservado. (Requer role: admin)
+- `PATCH /gateway/transacoes/:orderId/recusar`: registra falha/chargeback do pagamento e devolve automaticamente as reservas de estoque. (Requer role: admin)
 
 ## Recursos principais
 

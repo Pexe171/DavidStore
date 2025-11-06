@@ -1,5 +1,8 @@
 import prisma from '../lib/prisma.js'
-import { decimalToNumber, decimalToNumberOrZero } from '../utils/prisma.js'
+import messageQueue from '../lib/messageQueue.js'
+import EVENTS from '../messaging/events.js'
+import { NotFoundError } from '../utils/errors.js'
+import { decimalToNumber, decimalToNumberOrZero, toDecimal } from '../utils/prisma.js'
 
 const toNumber = (value) => decimalToNumberOrZero(value)
 const toNullableNumber = (value) => {
@@ -180,4 +183,89 @@ export const getPaymentSummary = async () => {
     liquidacoesPendentes: stats.settlementPipeline.length,
     alertasCriticos: stats.riskAlerts.length
   }
+}
+
+export const ensurePaymentIntent = async ({ orderId, total, customer }) => {
+  const existing = await prisma.payment.findUnique({ where: { orderId } })
+  if (existing) {
+    return mapPayment(existing)
+  }
+
+  const created = await prisma.payment.create({
+    data: {
+      orderId,
+      method: 'pix',
+      status: 'aguardando_pagamento',
+      amount: toDecimal(total),
+      netAmount: null,
+      installments: null,
+      customerName: customer?.name ?? 'Cliente David Store'
+    }
+  })
+
+  return mapPayment(created)
+}
+
+export const capturePaymentForOrder = async (orderId, payload) => {
+  const payment = await prisma.payment.findUnique({ where: { orderId } })
+  if (!payment) {
+    throw new NotFoundError('Pagamento não encontrado para o pedido informado.')
+  }
+
+  const now = new Date()
+  const updated = await prisma.payment.update({
+    where: { orderId },
+    data: {
+      method: payload.method ?? payment.method,
+      cardBrand: payload.cardBrand ?? payment.cardBrand,
+      installments: payload.installments ?? payment.installments,
+      amount: toDecimal(payload.amount ?? decimalToNumber(payment.amount)),
+      netAmount: toDecimal(payload.netAmount ?? payload.amount ?? decimalToNumber(payment.netAmount)),
+      gatewayFees: toDecimal(payload.gatewayFees ?? payment.gatewayFees),
+      riskScore: toDecimal(payload.riskScore ?? payment.riskScore),
+      settlementStatus: payload.settlementStatus ?? payment.settlementStatus ?? 'pendente',
+      settlementDate: payload.settlementDate ? new Date(payload.settlementDate) : payment.settlementDate,
+      authorizedAt: payment.authorizedAt ?? now,
+      capturedAt: now,
+      status: 'capturado',
+      chargeback: false
+    }
+  })
+
+  await messageQueue.publish(EVENTS.PAYMENT_CAPTURED, {
+    orderId,
+    paymentId: updated.id,
+    capturedAt: updated.capturedAt
+  })
+
+  return mapPayment(updated)
+}
+
+export const failPaymentForOrder = async (orderId, payload = {}) => {
+  const payment = await prisma.payment.findUnique({ where: { orderId } })
+  if (!payment) {
+    throw new NotFoundError('Pagamento não encontrado para o pedido informado.')
+  }
+
+  const finalStatus = payload.chargeback ? 'chargeback' : payload.status ?? 'recusado'
+
+  const updated = await prisma.payment.update({
+    where: { orderId },
+    data: {
+      status: finalStatus,
+      chargeback: Boolean(payload.chargeback),
+      capturedAt: null,
+      settlementStatus: payload.chargeback ? 'em_disputa' : payment.settlementStatus,
+      settlementDate: payload.chargeback ? new Date() : payment.settlementDate
+    }
+  })
+
+  await messageQueue.publish(EVENTS.PAYMENT_FAILED, {
+    orderId,
+    paymentId: updated.id,
+    reason: payload.reason ?? null,
+    chargeback: Boolean(payload.chargeback)
+  })
+
+  return mapPayment(updated)
 }
