@@ -1,7 +1,14 @@
 import { Link } from 'react-router-dom'
-import { useCart } from '../contexts/CartContext.jsx'
+import type { FC } from 'react'
 
-const ProductCard = ({ product }) => {
+import { useCart } from '../contexts/CartContext'
+import type { Product } from '../services/api'
+
+type ProductCardProps = {
+  product: Product
+}
+
+const ProductCard: FC<ProductCardProps> = ({ product }) => {
   const { addItem } = useCart()
 
   const handleAddToCart = () => {

@@ -1,8 +1,38 @@
 import { createContext, useContext, useMemo, useReducer } from 'react'
+import type { FC, ReactNode } from 'react'
 
-const CartContext = createContext()
+import type { Product } from '../services/api'
 
-const cartReducer = (state, action) => {
+type ProductSummary = Pick<Product, 'id' | 'name' | 'images' | 'finalPrice'>
+
+type CartItem = {
+  id: string
+  name: string
+  image?: string
+  finalPrice: number
+  quantity: number
+}
+
+type CartState = {
+  items: CartItem[]
+}
+
+type CartAction =
+  | { type: 'ADD_ITEM'; payload: CartItem }
+  | { type: 'REMOVE_ITEM'; payload: string }
+  | { type: 'CLEAR_CART' }
+
+type CartContextValue = {
+  items: CartItem[]
+  total: number
+  addItem: (product: ProductSummary, quantity?: number) => void
+  removeItem: (id: string) => void
+  clearCart: () => void
+}
+
+const CartContext = createContext<CartContextValue | undefined>(undefined)
+
+const cartReducer = (state: CartState, action: CartAction): CartState => {
   switch (action.type) {
     case 'ADD_ITEM': {
       const existing = state.items.find((item) => item.id === action.payload.id)
@@ -34,18 +64,19 @@ const cartReducer = (state, action) => {
   }
 }
 
-const initialState = {
+const initialState: CartState = {
   items: []
 }
 
-export const CartProvider = ({ children }) => {
+type CartProviderProps = {
+  children: ReactNode
+}
+
+export const CartProvider: FC<CartProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(cartReducer, initialState)
 
-  const value = useMemo(() => {
-    const total = state.items.reduce(
-      (acc, item) => acc + item.quantity * item.finalPrice,
-      0
-    )
+  const value = useMemo<CartContextValue>(() => {
+    const total = state.items.reduce((acc, item) => acc + item.quantity * item.finalPrice, 0)
     return {
       items: state.items,
       total,
@@ -68,4 +99,12 @@ export const CartProvider = ({ children }) => {
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>
 }
 
-export const useCart = () => useContext(CartContext)
+export const useCart = (): CartContextValue => {
+  const context = useContext(CartContext)
+
+  if (!context) {
+    throw new Error('useCart deve ser utilizado dentro de um CartProvider')
+  }
+
+  return context
+}

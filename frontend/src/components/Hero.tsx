@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
+import type { FC } from 'react'
 
-const Hero = () => {
+const Hero: FC = () => {
   return (
     <section
       className="container"

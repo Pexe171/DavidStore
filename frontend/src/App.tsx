@@ -1,12 +1,14 @@
 import { Route, Routes } from 'react-router-dom'
-import StoreLayout from './layouts/StoreLayout.jsx'
-import HomePage from './pages/HomePage.jsx'
-import ProductDetailPage from './pages/ProductDetailPage.jsx'
-import CartPage from './pages/CartPage.jsx'
-import CheckoutPage from './pages/CheckoutPage.jsx'
-import DashboardPage from './pages/DashboardPage.jsx'
+import type { FC } from 'react'
 
-function App () {
+import StoreLayout from './layouts/StoreLayout'
+import HomePage from './pages/HomePage'
+import ProductDetailPage from './pages/ProductDetailPage'
+import CartPage from './pages/CartPage'
+import CheckoutPage from './pages/CheckoutPage'
+import DashboardPage from './pages/DashboardPage'
+
+const App: FC = () => {
   return (
     <Routes>
       <Route element={<StoreLayout />}>

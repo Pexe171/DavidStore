@@ -1,4 +1,13 @@
-const CategoryFilter = ({ categories, active, onSelect }) => {
+import type { FC } from 'react'
+import type { Category } from '../services/api'
+
+type CategoryFilterProps = {
+  categories: Category[]
+  active: string
+  onSelect: (categoryId: string) => void
+}
+
+const CategoryFilter: FC<CategoryFilterProps> = ({ categories, active, onSelect }) => {
   return (
     <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
       <button

@@ -1,7 +1,9 @@
-import { useCart } from '../contexts/CartContext.jsx'
 import { Link } from 'react-router-dom'
+import type { FC } from 'react'
 
-const CartSummary = () => {
+import { useCart } from '../contexts/CartContext'
+
+const CartSummary: FC = () => {
   const { items, total, removeItem, clearCart } = useCart()
 
   if (!items.length) {

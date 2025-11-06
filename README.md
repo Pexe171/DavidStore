@@ -7,7 +7,7 @@ Aplicação completa de e-commerce inspirada no padrão Casas Bahia, com vitrine
 O projeto é composto por duas aplicações:
 
 - **Backend (Node.js + Express + Prisma/PostgreSQL):** expõe APIs para produtos, categorias, pedidos, autenticação JWT e métricas do painel, agora com persistência real e migrations versionadas.
-- **Frontend (React + Vite):** oferece a experiência David Store para clientes e administradores, incluindo vitrine, carrinho, checkout e dashboard.
+- **Frontend (React + Vite + TypeScript):** oferece a experiência David Store para clientes e administradores, incluindo vitrine, carrinho, checkout e dashboard.
 
 ## Estrutura de pastas
 
@@ -66,6 +66,17 @@ Credenciais padrão para explorar o painel administrativo:
 
 > 💡 Para criar novas migrations durante o desenvolvimento, utilize `npm run migrate:dev -- --name <descricao>` no diretório `backend`.
 
+### Qualidade de código e testes
+
+O frontend agora conta com uma esteira completa de qualidade:
+
+- TypeScript com `npm run typecheck` e ESLint + Prettier (`npm run lint` / `npm run format`).
+- Testes unitários com Vitest + Testing Library (`npm test`).
+- Testes end-to-end com Playwright (`npm run test:e2e`).
+- Workflow de CI (`.github/workflows/ci.yml`) que automatiza lint, type-check, unit tests e E2E.
+
+> ⚙️ Antes de rodar os testes E2E localmente execute `npx playwright install --with-deps` dentro de `frontend` para instalar os navegadores.
+
 ### Dev Container (VS Code)
 
 Há um `.devcontainer/devcontainer.json` configurado. Abra a pasta no VS Code, aceite a sugestão "Reopen in Container" e aguarde o provisioning: Docker, banco, dependências e scripts já sobem prontos para você focar no código.
@@ -96,9 +107,8 @@ Há um `.devcontainer/devcontainer.json` configurado. Abra a pasta no VS Code, a
 
 ## Próximos passos sugeridos
 
-- Pipeline de CI com testes, lint e checagem de migrations automatizada.
+- Expandir a cobertura de testes (unitários e E2E) e adicionar testes de contrato da API.
 - Integração com provedores de pagamento e logística.
-- Testes automatizados end-to-end com Playwright ou Cypress.
 - Internacionalização e acessibilidade aprimoradas.
 
 ## Licença

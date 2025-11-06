@@ -1,16 +1,24 @@
 import { useEffect, useState } from 'react'
+import type { FC } from 'react'
 import { useParams } from 'react-router-dom'
-import { fetchProduct } from '../services/api.js'
-import { useCart } from '../contexts/CartContext.jsx'
 
-const ProductDetailPage = () => {
-  const { id } = useParams()
-  const [product, setProduct] = useState(null)
-  const [loading, setLoading] = useState(true)
+import { fetchProduct } from '../services/api'
+import type { Product } from '../services/api'
+import { useCart } from '../contexts/CartContext'
+
+const ProductDetailPage: FC = () => {
+  const { id } = useParams<{ id: string }>()
+  const [product, setProduct] = useState<Product | null>(null)
+  const [loading, setLoading] = useState<boolean>(true)
   const { addItem } = useCart()
 
   useEffect(() => {
-    const load = async () => {
+    const load = async (): Promise<void> => {
+      if (!id) {
+        setProduct(null)
+        setLoading(false)
+        return
+      }
       try {
         const response = await fetchProduct(id)
         setProduct(response)
