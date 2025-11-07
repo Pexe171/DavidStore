@@ -4,7 +4,7 @@ import {
   createOrder,
   updateOrderStatus
 } from '../services/orderService.js'
-import { ForbiddenError } from '../utils/errors.js'
+import { ForbiddenError, NotFoundError } from '../utils/errors.js'
 
 export const getOrders = async (req, res, next) => {
   try {
@@ -18,6 +18,11 @@ export const getOrders = async (req, res, next) => {
 export const getOrder = async (req, res, next) => {
   try {
     const order = await getOrderById(req.params.id)
+
+    if (req.user?.role === 'customer' && order.customerId !== req.user.sub) {
+      throw new NotFoundError('Pedido não encontrado.')
+    }
+
     res.json(order)
   } catch (error) {
     next(error)
