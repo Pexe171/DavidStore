@@ -8,7 +8,9 @@ type ProductPageProps = {
   params: { id: string }
 }
 
-export const generateMetadata = async ({ params }: ProductPageProps): Promise<Metadata> => {
+export const generateMetadata = async ({
+  params
+}: ProductPageProps): Promise<Metadata> => {
   try {
     const product = await fetchProduct(params.id)
     return {
@@ -23,7 +25,9 @@ export const generateMetadata = async ({ params }: ProductPageProps): Promise<Me
   }
 }
 
-const ProductDetailPage = async ({ params }: ProductPageProps): Promise<JSX.Element> => {
+const ProductDetailPage = async ({
+  params
+}: ProductPageProps): Promise<JSX.Element> => {
   try {
     const product = await fetchProduct(params.id)
     return <ProductDetailContent product={product} />

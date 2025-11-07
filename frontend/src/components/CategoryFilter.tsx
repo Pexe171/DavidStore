@@ -29,8 +29,19 @@ const CategoryFilter: FC<CategoryFilterProps> = ({ categories, active }) => {
   }
 
   return (
-    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
-      <button onClick={() => navigateToCategory('')} className="btn-primary" style={{ background: active === '' ? '#0070f3' : '#1f2937' }}>
+    <div
+      style={{
+        display: 'flex',
+        gap: '1rem',
+        flexWrap: 'wrap',
+        marginBottom: '2rem'
+      }}
+    >
+      <button
+        onClick={() => navigateToCategory('')}
+        className="btn-primary"
+        style={{ background: active === '' ? '#0070f3' : '#1f2937' }}
+      >
         Todas
       </button>
       {categories.map((category) => (

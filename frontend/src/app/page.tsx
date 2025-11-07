@@ -8,9 +8,12 @@ type HomePageProps = {
   searchParams?: { [key: string]: string | string[] | undefined }
 }
 
-const HomePage = async ({ searchParams }: HomePageProps): Promise<JSX.Element> => {
+const HomePage = async ({
+  searchParams
+}: HomePageProps): Promise<JSX.Element> => {
   const activeCategoryParam = searchParams?.categoria
-  const activeCategory = typeof activeCategoryParam === 'string' ? activeCategoryParam : ''
+  const activeCategory =
+    typeof activeCategoryParam === 'string' ? activeCategoryParam : ''
 
   let categories: Category[] = []
   let products: Product[] = []
@@ -23,7 +26,8 @@ const HomePage = async ({ searchParams }: HomePageProps): Promise<JSX.Element> =
     ])
   } catch (error) {
     console.error('Erro ao carregar a vitrine SSR da David Store:', error)
-    errorMessage = 'Não foi possível carregar nossa vitrine inteligente no momento.'
+    errorMessage =
+      'Não foi possível carregar nossa vitrine inteligente no momento.'
   }
 
   return (
@@ -43,8 +47,9 @@ const HomePage = async ({ searchParams }: HomePageProps): Promise<JSX.Element> =
           <div>
             <h2 className="section-title">Coleções em destaque</h2>
             <p style={{ color: '#64748b', maxWidth: '540px' }}>
-              Curadoria inspirada nas Casas Bahia com uma camada David Experience: serviços premium, garantia estendida e
-              integração com assistentes virtuais.
+              Curadoria inspirada nas Casas Bahia com uma camada David
+              Experience: serviços premium, garantia estendida e integração com
+              assistentes virtuais.
             </p>
           </div>
         </header>
@@ -52,7 +57,12 @@ const HomePage = async ({ searchParams }: HomePageProps): Promise<JSX.Element> =
         {errorMessage ? (
           <p>{errorMessage}</p>
         ) : products.length ? (
-          <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}>
+          <div
+            className="grid"
+            style={{
+              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))'
+            }}
+          >
             {products.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}

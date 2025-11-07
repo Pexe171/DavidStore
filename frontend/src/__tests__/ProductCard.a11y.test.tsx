@@ -6,7 +6,8 @@ import ProductCard from '@/components/ProductCard'
 import { CartProvider } from '@/contexts/CartContext'
 import type { Product } from '@/services/api'
 
-const renderWithCart = (ui: ReactNode) => render(<CartProvider>{ui}</CartProvider>)
+const renderWithCart = (ui: ReactNode) =>
+  render(<CartProvider>{ui}</CartProvider>)
 
 describe('ProductCard', () => {
   const product: Product = {

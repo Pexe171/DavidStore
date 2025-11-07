@@ -5,7 +5,10 @@ import type { FC, ReactNode } from 'react'
 
 import type { Product } from '@/services/api'
 
-type ProductSummary = Pick<Product, 'id' | 'name' | 'images' | 'finalPrice'>
+type ProductSummary = Pick<
+  Product,
+  'id' | 'name' | 'images' | 'finalPrice' | 'price'
+>
 
 type CartItem = {
   id: string
@@ -78,7 +81,10 @@ export const CartProvider: FC<CartProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(cartReducer, initialState)
 
   const value = useMemo<CartContextValue>(() => {
-    const total = state.items.reduce((acc, item) => acc + item.quantity * item.finalPrice, 0)
+    const total = state.items.reduce(
+      (acc, item) => acc + item.quantity * item.finalPrice,
+      0
+    )
     return {
       items: state.items,
       total,
@@ -89,7 +95,7 @@ export const CartProvider: FC<CartProviderProps> = ({ children }) => {
             id: product.id,
             name: product.name,
             image: product.images?.[0],
-            finalPrice: product.finalPrice,
+            finalPrice: product.finalPrice ?? product.price,
             quantity
           }
         }),

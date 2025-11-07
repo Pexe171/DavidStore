@@ -25,7 +25,10 @@ const Header: FC = () => {
         boxShadow: '0 20px 40px -20px rgba(15, 23, 42, 0.6)'
       }}
     >
-      <div className="container" style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+      <div
+        className="container"
+        style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}
+      >
         <Link href="/" style={{ fontSize: '1.5rem', fontWeight: 700 }}>
           David Store
         </Link>
@@ -33,10 +36,16 @@ const Header: FC = () => {
           <Link href="/" style={{ color: isActive('/') ? '#38bdf8' : '#fff' }}>
             Início
           </Link>
-          <Link href="/painel" style={{ color: isActive('/painel') ? '#38bdf8' : '#fff' }}>
+          <Link
+            href="/painel"
+            style={{ color: isActive('/painel') ? '#38bdf8' : '#fff' }}
+          >
             Painel Administrativo
           </Link>
-          <Link href="/carrinho" style={{ color: isActive('/carrinho') ? '#38bdf8' : '#fff' }}>
+          <Link
+            href="/carrinho"
+            style={{ color: isActive('/carrinho') ? '#38bdf8' : '#fff' }}
+          >
             Meu Carrinho ({cartCount})
           </Link>
         </nav>

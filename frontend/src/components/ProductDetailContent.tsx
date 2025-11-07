@@ -12,7 +12,9 @@ type ProductDetailContentProps = {
 const ProductDetailContent: FC<ProductDetailContentProps> = ({ product }) => {
   const { addItem } = useCart()
 
-  const finalPrice = product.finalPrice.toLocaleString('pt-BR', {
+  const finalPriceValue = product.finalPrice ?? product.price
+
+  const finalPrice = finalPriceValue.toLocaleString('pt-BR', {
     style: 'currency',
     currency: 'BRL'
   })
@@ -34,20 +36,33 @@ const ProductDetailContent: FC<ProductDetailContentProps> = ({ product }) => {
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {product.images?.map((image) => (
-            <img key={image} src={image} alt={product.name} style={{ width: '100%', borderRadius: '24px' }} />
+            <img
+              key={image}
+              src={image}
+              alt={product.name}
+              style={{ width: '100%', borderRadius: '24px' }}
+            />
           ))}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <span className="badge">{product.brand}</span>
           <h1 style={{ margin: 0 }}>{product.name}</h1>
-          <p style={{ color: '#64748b', fontSize: '1.125rem' }}>{product.description}</p>
+          <p style={{ color: '#64748b', fontSize: '1.125rem' }}>
+            {product.description}
+          </p>
           <div>
             <strong style={{ fontSize: '2.5rem' }}>{finalPrice}</strong>
             <p style={{ margin: 0, color: '#94a3b8' }}>
               De {originalPrice} por {finalPrice}
             </p>
           </div>
-          <ul style={{ listStyle: 'disc', paddingLeft: '1.5rem', color: '#334155' }}>
+          <ul
+            style={{
+              listStyle: 'disc',
+              paddingLeft: '1.5rem',
+              color: '#334155'
+            }}
+          >
             {product.highlights?.map((highlight) => (
               <li key={highlight}>{highlight}</li>
             ))}

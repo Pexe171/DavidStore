@@ -3,15 +3,18 @@ FROM node:20-alpine
 WORKDIR /app
 
 COPY package.json ./
-COPY prisma ./prisma
+COPY shared/types ./shared/types
+
+WORKDIR /app/backend
+COPY backend/package.json ./package.json
+COPY backend/prisma ./prisma
 
 RUN npm install
 RUN npm run prisma:generate || npx prisma generate
 
-COPY config ./config
-COPY src ./src
-COPY prisma ./prisma
-COPY .env.example ./
+COPY backend/config ./config
+COPY backend/src ./src
+COPY backend/.env.example ./
 
 ENV NODE_ENV=production
 
