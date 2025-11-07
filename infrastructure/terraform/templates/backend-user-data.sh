@@ -3,7 +3,7 @@ set -euo pipefail
 
 echo "Atualizando sistema operacional"
 apt-get update -y
-apt-get install -y docker.io awscli
+apt-get install -y docker.io awscli jq
 systemctl enable docker
 systemctl start docker
 
@@ -16,14 +16,18 @@ fi
 echo "Preparando diretórios"
 mkdir -p /opt/davidstore
 
+echo "Buscando variáveis sensíveis no AWS SSM Parameter Store"
+ssm_payload=$(aws ssm get-parameter \
+  --name "${ssm_parameter_name}" \
+  --with-decryption \
+  --region "${aws_region}" \
+  --query 'Parameter.Value' \
+  --output text)
+
 echo "Criando arquivo .env do backend"
 cat <<ENV >/opt/davidstore/.env
 NODE_ENV=${environment}
-DATABASE_URL=${database_url}
-REDIS_HOST=${redis_host}
-REDIS_PORT=6379
-REDIS_TLS=true
-MESSAGE_QUEUE_URL=${sqs_queue_url}
+$(printf '%s' "${ssm_payload}" | jq -r 'to_entries | .[] | "\(.key)=\(.value)"')
 ENV
 
 chmod 600 /opt/davidstore/.env
