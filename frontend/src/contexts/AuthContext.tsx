@@ -89,16 +89,19 @@ export const AuthProvider: FC<PropsWithChildren> = ({ children }) => {
     window.localStorage.removeItem(USER_STORAGE_KEY)
   }, [])
 
-  const login = useCallback(async (credentials: AuthCredentials): Promise<void> => {
-    setIsLoading(true)
-    try {
-      const response = await authenticate(credentials)
-      persistSession(response.token, credentials.email)
-      lastCredentialsRef.current = credentials
-    } finally {
-      setIsLoading(false)
-    }
-  }, [persistSession])
+  const login = useCallback(
+    async (credentials: AuthCredentials): Promise<void> => {
+      setIsLoading(true)
+      try {
+        const response = await authenticate(credentials)
+        persistSession(response.token, credentials.email)
+        lastCredentialsRef.current = credentials
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [persistSession]
+  )
 
   const logout = useCallback(() => {
     lastCredentialsRef.current = null

@@ -19,6 +19,10 @@ const monetarySchema = z.coerce
   .number({ invalid_type_error: 'Valor deve ser numérico.' })
   .refine((value) => Number.isFinite(value), { message: 'Valor deve ser numérico.' })
 
+const positiveMonetarySchema = monetarySchema.refine((value) => value >= 0.01, {
+  message: 'Preço deve ser maior que zero.'
+})
+
 const percentageSchema = z.coerce
   .number({ invalid_type_error: 'Valor deve ser numérico.' })
   .min(0, { message: 'Valor deve ser maior ou igual a zero.' })
@@ -43,7 +47,7 @@ const productBaseSchema = {
   description: z
     .string({ required_error: 'Descrição é obrigatória.' })
     .min(1, { message: 'Descrição é obrigatória.' }),
-  price: monetarySchema.min(0.01, { message: 'Preço deve ser maior que zero.' }),
+  price: positiveMonetarySchema,
   discount: optionalPercentageSchema,
   stock: stockSchema,
   brand: z

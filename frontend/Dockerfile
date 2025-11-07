@@ -2,10 +2,15 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-COPY package*.json ./
+COPY package.json ./
+COPY shared/types ./shared/types
+
+WORKDIR /app/frontend
+COPY frontend/package.json ./package.json
+
 RUN npm install
 
-COPY . .
+COPY frontend/ ./
 
 RUN npm run build
 

@@ -22,7 +22,13 @@ const RootLayout = ({ children }: RootLayoutProps): JSX.Element => {
     <html lang="pt-BR">
       <body>
         <Providers>
-          <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+          <div
+            style={{
+              minHeight: '100vh',
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+          >
             <Header />
             <main style={{ flex: 1 }}>{children}</main>
             <Footer />

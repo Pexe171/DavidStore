@@ -10,10 +10,20 @@ const Footer: FC = () => {
         marginTop: 'auto'
       }}
     >
-      <div className="container" style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1.5rem' }}>
+      <div
+        className="container"
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '1.5rem'
+        }}
+      >
         <div>
           <h3>David Store</h3>
-          <p>Experiência omnichannel inspirada nas maiores varejistas do Brasil.</p>
+          <p>
+            Experiência omnichannel inspirada nas maiores varejistas do Brasil.
+          </p>
         </div>
         <div>
           <h4>Atendimento</h4>

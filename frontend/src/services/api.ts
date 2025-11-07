@@ -27,13 +27,18 @@ export type PaymentTransactionsResponse = PaymentTransactionsResponseType
 export type SubmitOrderPayload = SubmitOrderPayloadType
 export type AuthResponse = AuthResponseType
 
-const baseURL = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+const baseURL =
+  process.env.API_URL ??
+  process.env.NEXT_PUBLIC_API_URL ??
+  'http://localhost:4000'
 
 const api = axios.create({
   baseURL
 })
 
-export const fetchProducts = async (params: Record<string, unknown> = {}): Promise<Product[]> => {
+export const fetchProducts = async (
+  params: Record<string, unknown> = {}
+): Promise<Product[]> => {
   const { data } = await api.get('/produtos', { params })
   return ProductListResponseSchema.parse(data)
 }
@@ -48,7 +53,10 @@ export const fetchCategories = async (): Promise<Category[]> => {
   return CategoryListSchema.parse(data)
 }
 
-export const authenticate = async (credentials: { email: string; password: string }): Promise<AuthResponse> => {
+export const authenticate = async (credentials: {
+  email: string
+  password: string
+}): Promise<AuthResponse> => {
   const { data } = await api.post('/auth/login', credentials)
   return AuthResponseSchema.parse(data)
 }
@@ -79,7 +87,9 @@ export const fetchPaymentTransactions = async (
   return PaymentTransactionsResponseSchema.parse(data)
 }
 
-export const submitOrder = async (payload: SubmitOrderPayload): Promise<void> => {
+export const submitOrder = async (
+  payload: SubmitOrderPayload
+): Promise<void> => {
   const body = SubmitOrderPayloadSchema.parse(payload)
   await api.post('/pedidos', body)
 }

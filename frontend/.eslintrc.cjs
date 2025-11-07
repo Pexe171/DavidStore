@@ -3,7 +3,9 @@ module.exports = {
   parser: '@typescript-eslint/parser',
   parserOptions: {
     ecmaVersion: 'latest',
-    sourceType: 'module'
+    sourceType: 'module',
+    project: ['./tsconfig.json'],
+    tsconfigRootDir: __dirname
   },
   plugins: ['@typescript-eslint', 'jsx-a11y', 'import', 'prettier'],
   extends: [
@@ -16,12 +18,19 @@ module.exports = {
   ],
   rules: {
     '@typescript-eslint/explicit-function-return-type': 'off',
-    '@typescript-eslint/no-misused-promises': ['error', { checksVoidReturn: false }],
+    '@typescript-eslint/no-misused-promises': [
+      'error',
+      { checksVoidReturn: false }
+    ],
     'prettier/prettier': 'error',
     'import/order': [
       'error',
       {
-        groups: [['builtin', 'external'], 'internal', ['parent', 'sibling', 'index']],
+        groups: [
+          ['builtin', 'external'],
+          'internal',
+          ['parent', 'sibling', 'index']
+        ],
         'newlines-between': 'always'
       }
     ]
