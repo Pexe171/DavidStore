@@ -1,67 +1,97 @@
 # David Store
 
-Aplicação completa de e-commerce inspirada no padrão Casas Bahia, com vitrine digital moderna, carrinho, checkout humanizado e painel administrativo inteligente.
+Bem-vindo à David Store, um ecossistema completo de e-commerce inspirado na experiência Casas Bahia — só que turbinado para o presente e o futuro. Aqui você encontra uma vitrine digital moderna, carrinho inteligente, checkout humanizado e um painel administrativo que entende o ritmo do seu negócio.
 
-## Visão geral
+## 📚 Sumário
+- [Visão Geral](#-visão-geral)
+- [Tecnologias Principais](#-tecnologias-principais)
+- [Arquitetura e Fluxos Principais](#-arquitetura-e-fluxos-principais)
+- [Observabilidade e Resiliência](#-observabilidade-e-resiliência)
+- [Estrutura de Pastas](#-estrutura-de-pastas)
+- [Guia de Execução](#-guia-de-execução)
+  - [Pré-requisitos](#pré-requisitos)
+  - [Checklist rápido](#checklist-rápido)
+  - [Opção 1 — Stack completa com Docker Compose](#opção-1--stack-completa-com-docker-compose)
+  - [Opção 2 — Execução manual](#opção-2--execução-manual)
+  - [Scripts úteis do monorepo](#scripts-úteis-do-monorepo)
+- [Configuração da Fila de Eventos (AWS SQS)](#-configuração-da-fila-de-eventos-aws-sqs)
+- [Camada de Segurança da API](#-camada-de-segurança-da-api)
+- [Gestão de Dados e DevOps](#-gestão-de-dados-e-devops)
+- [Qualidade de Código e Testes](#-qualidade-de-código-e-testes)
+- [Dev Container (VS Code)](#-dev-container-vs-code)
+- [Endpoints em Destaque](#-endpoints-em-destaque)
+- [Experiência do Usuário e Diferenciais](#-experiência-do-usuário-e-diferenciais)
+- [Contribuição, Contato e Comunidade](#-contribuição-contato-e-comunidade)
+- [Próximos Passos Sugeridos](#-próximos-passos-sugeridos)
+- [Licença](#-licença)
 
-O projeto é composto por duas aplicações:
+## 🌟 Visão Geral
+O projeto é um monorepo com duas aplicações principais trabalhando em harmonia:
 
-- **Backend (Node.js + Express + Prisma/PostgreSQL):** expõe APIs para produtos, categorias, pedidos, autenticação JWT e métricas do painel, agora com persistência real e migrations versionadas.
-- **Frontend (Next.js + SSR/SSG + TypeScript):** entrega HTML pré-renderizado para homepage e detalhes de produto, garantindo vitrine veloz, carrinho, checkout e dashboard em uma experiência David Store completa.
+- **Backend (Node.js + Express + Prisma/PostgreSQL):** expõe APIs para produtos, categorias, pedidos, autenticação JWT e métricas do painel, com persistência real, migrations versionadas e eventos distribuídos.
+- **Frontend (Next.js + SSR/SSG + TypeScript):** entrega páginas pré-renderizadas para a vitrine, detalhes de produto, carrinho, checkout e dashboard, garantindo performance, SEO e uma experiência humana de ponta a ponta.
 
-### Arquitetura orientada a eventos e pronta para escalar
+## 🧰 Tecnologias Principais
+| Camada | Tecnologias | Por que usamos |
+| --- | --- | --- |
+| **Frontend** | Next.js 14, React 18, TypeScript, Tailwind CSS, React Query, Playwright | Renderização híbrida (SSR/SSG), DX moderna, tipagem rígida e testes de ponta a ponta confiáveis. |
+| **Backend** | Node.js 18, Express, Prisma ORM, Zod, Pino, OpenTelemetry | APIs performáticas, validações centralizadas e observabilidade pronta para produção. |
+| **Dados** | PostgreSQL 16, Redis 7, Prisma Migrate | Persistência relacional com caching inteligente e versionamento de schema rastreável. |
+| **Mensageria** | AWS SQS (ou fallback em memória), Worker Node | Fluxos assíncronos resilientes para pedidos, pagamentos e atualizações de dashboard. |
+| **Infra/DevOps** | Docker, Docker Compose, Terraform, GitHub Actions, Dev Containers | Provisionamento reprodutível, pipelines automatizados e onboarding em minutos. |
+| **Qualidade** | ESLint, Prettier, Jest, Testing Library, jest-axe | Código padronizado, cobertura de testes sólida e acessibilidade monitorada. |
 
-- **Pedidos e David Pay desacoplados:** `createOrder` publica um evento `order.created` diretamente na fila AWS SQS provisionada pelo Terraform. O serviço de pagamentos consome esse evento para abrir a intenção de pagamento de forma assíncrona, sem depender de um broker local.
-- **Fluxo de estoque transacional:** a criação do pedido reserva o estoque (sem baixar do saldo real). Apenas após o evento `payment.captured` o estoque é consumido definitivamente. Em caso de falha (`payment.failed`) a reserva é liberada automaticamente.
-- **Read model dedicado para o dashboard:** métricas e alertas agora são servidos a partir da tabela `DashboardSnapshot`, regenerada em background sempre que pedidos ou pagamentos mudam de status. O painel passa a responder instantaneamente mesmo com alto volume de dados.
-- **Fila plugável:** agora a implementação padrão usa AWS SQS (com fallback opcional em memória via `MESSAGE_QUEUE_DRIVER=in-memory`), mantendo o contrato de eventos estável para futuras trocas por RabbitMQ/Kafka/Redis Streams se necessário.
+## 🧠 Arquitetura e Fluxos Principais
+- **Pedidos e David Pay desacoplados:** `createOrder` publica o evento `order.created` em uma fila AWS SQS provisionada via Terraform. O serviço de pagamentos consome esse evento para abrir a intenção de pagamento de forma assíncrona.
+- **Fluxo de estoque transacional:** o pedido reserva o estoque sem abatê-lo. Após `payment.captured`, o saldo é consumido; se `payment.failed`, a reserva é liberada automaticamente.
+- **Read model dedicado para o dashboard:** métricas e alertas são servidos a partir da tabela `DashboardSnapshot`, atualizada em background para respostas instantâneas mesmo em cenários de alto volume.
+- **Fila plugável:** implementação padrão com AWS SQS, mantendo contrato estável para trocar por RabbitMQ/Kafka/Redis Streams quando necessário (`MESSAGE_QUEUE_DRIVER=in-memory` funciona como fallback local).
 
-### Observabilidade, DX e resiliência de nível sênior
+## 🔍 Observabilidade e Resiliência
+- **Monorepo com tipos compartilhados:** o pacote `@davidstore/types` centraliza os esquemas Zod, garantindo contrato único entre API e React.
+- **Logs estruturados com Pino:** toda requisição recebe contexto (trace/span ID) e sai pronta para ELK, Datadog ou similares.
+- **Tracing distribuído com OpenTelemetry:** spans HTTP, Express e fila são gerados automaticamente com suporte OTLP.
+- **Fila instrumentada:** producers e consumers SQS emitem logs/spans estruturados, mantendo rastreabilidade ponta a ponta.
+- **Dashboard rebuild monitorado:** snapshots de métricas registram logs e traços, acelerando diagnósticos em incidentes.
 
-- **Monorepo com tipos compartilhados:** backend, frontend e o pacote `@davidstore/types` vivem no mesmo workspace. Os esquemas Zod usados pela API são publicados e reutilizados no React, eliminando divergências de contrato.
-- **Logs estruturados com Pino:** cada requisição ganha contexto (trace/span ID) e logs padronizados, prontos para ferramentas como ELK ou Datadog.
-- **Tracing distribuído com OpenTelemetry:** a API exporta spans automaticamente (HTTP, Express, fila de eventos) com opção de envio para um collector OTLP. Assim fica simples rastrear uma compra do clique até a captura financeira.
-- **Fila instrumentada e resiliente:** o consumer/produtor SQS possui spans e logs estruturados, mantendo rastreabilidade ponta a ponta mesmo em produção.
-- **Dashboard rebuild assíncrono monitorado:** snapshots de métricas são reconstruídos via eventos e registrados em logs/traços, garantindo diagnósticos rápidos em incidentes.
-
-## Estrutura de pastas
-
-```
+## 🗂️ Estrutura de Pastas
+```text
 DavidStore/
 ├── backend/          # API REST com autenticação e painel administrativo
 ├── frontend/         # Frontend em Next.js com SSR/SSG e testes de acessibilidade
 └── shared/types/     # Pacote de esquemas Zod compartilhados (workspace)
 ```
 
-## Como executar localmente
-
-> Execute `npm install` na raiz do repositório para instalar todas as dependências do workspace antes de seguir qualquer opção abaixo.
+## 🚀 Guia de Execução
+> Antes de tudo, rode `npm install` na raiz do repositório para instalar as dependências compartilhadas.
 
 ### Pré-requisitos
-
 - Node.js 18+
 - npm ou yarn
-- Docker + Docker Compose (opcional, mas recomendado para um onboarding turbo)
-- PostgreSQL 16+ (apenas se você preferir rodar tudo manualmente)
+- Docker + Docker Compose (recomendado para onboarding rápido)
+- PostgreSQL 16+ (apenas se optar por executar sem Docker)
 
-### Opção 1 — stack completa com Docker Compose
+### Checklist rápido
+Antes de rodar qualquer comando, confirme:
+1. `npm install` executado na raiz para instalar workspaces (`backend`, `frontend`, `shared`).
+2. Arquivos `.env` clonados a partir dos exemplos (`backend/.env.example`, `frontend/.env.example`).
+3. Docker em execução (caso use containers) e porta `3000`/`4000` livres.
+4. Credenciais AWS válidas exportadas (se quiser usar SQS real e Terraform).
 
-1. Copie as variáveis de ambiente base: `cp backend/.env.example backend/.env` (ajuste os segredos `JWT_SECRET_PRIMARY`/`JWT_SECRET_SECONDARY` para reforçar a rotação de chaves).
-2. Suba toda a stack: `docker compose up --build`.
-3. Popular o banco com os dados de demonstração: `docker compose exec backend npm run --workspace backend db:seed`.
+### Opção 1 — Stack completa com Docker Compose
+1. Copie as variáveis de ambiente: `cp backend/.env.example backend/.env` (ajuste `JWT_SECRET_PRIMARY` e `JWT_SECRET_SECONDARY`).
+2. Suba tudo: `docker compose up --build`.
+3. Popule o banco com dados demo: `docker compose exec backend npm run --workspace backend db:seed`.
 
-Pronto! A API responde em `http://localhost:4000` e o frontend em `http://localhost:3000`.
+Após isso, o backend responde em `http://localhost:4000` e o frontend em `http://localhost:3000`.
 
-Credenciais padrão para explorar o painel administrativo:
-
+Credenciais padrão para explorar o painel:
 - E-mail: `admin@davidstore.com`
 - Senha: `admin123`
 
-### Opção 2 — rodando manualmente (sem Docker)
-
-1. Garanta um PostgreSQL rodando e crie um banco chamado `davidstore`.
-2. Copie o `.env` do backend e ajuste o `DATABASE_URL` se necessário:
-
+### Opção 2 — Execução manual
+1. Garanta um PostgreSQL rodando e crie o banco `davidstore`.
+2. Copie e configure o `.env` do backend:
    ```bash
    cp backend/.env.example backend/.env
    npm run --workspace backend prisma:generate
@@ -69,101 +99,105 @@ Credenciais padrão para explorar o painel administrativo:
    npm run --workspace backend db:seed
    npm run --workspace backend dev
    ```
-
-   A API ficará disponível em `http://localhost:4000`.
-
+   A API fica disponível em `http://localhost:4000`.
 3. Em outro terminal, suba o frontend:
-
    ```bash
    npm run --workspace frontend dev
    ```
+   O Next.js responde em `http://localhost:3000`. Ajuste `NEXT_PUBLIC_API_URL` caso a API esteja em outra origem.
 
-   O Next.js atenderá em `http://localhost:3000`. Ajuste `NEXT_PUBLIC_API_URL` se quiser apontar para outra origem da API.
+#### Inicialização do frontend (detalhada)
+- `npm run --workspace frontend dev`: modo desenvolvimento com HMR.
+- `npm run --workspace frontend build && npm run --workspace frontend start`: build de produção servida pelo Next.js.
+- `npm run --workspace frontend lint`: garante padrões ESLint/Prettier antes do commit.
 
-> 💡 Para criar novas migrations durante o desenvolvimento, utilize `npm run migrate:dev -- --name <descricao>` no diretório `backend`.
+#### Inicialização do backend (detalhada)
+- `npm run --workspace backend dev`: sobe a API com reload automático (ts-node-dev).
+- `npm run --workspace backend start`: builda e executa a versão compilada para produção.
+- `npm run --workspace backend test`: roda suíte Jest focada em domínios críticos (pedidos, estoque, auth).
 
-### Fila de eventos (AWS SQS)
+### Scripts úteis do monorepo
+| Objetivo | Comando | Observações |
+| --- | --- | --- |
+| Instalar dependências | `npm install` | Executa na raiz e habilita os workspaces. |
+| Checar tipos | `npm run typecheck` | Aproveita `tsconfig` compartilhado e detecta regressões cedo. |
+| Lintar projeto | `npm run lint` | Aplica regras no backend e frontend de uma vez. |
+| Formatar código | `npm run format` | Usa Prettier com opinião unificada. |
+| Testes unitários | `npm test` | Orquestra Jest em paralelo nos workspaces. |
+| Testes E2E | `npm run test:e2e` | Requer `playwright install --with-deps` antes do primeiro uso. |
 
-A David Store agora publica e consome eventos reais na fila AWS SQS criada pelo Terraform. Configure as variáveis abaixo no `backend/.env` (ou nos parâmetros SSM gerados pela infraestrutura):
+> 💡 Para criar novas migrations durante o desenvolvimento, use `npm run migrate:dev -- --name <descricao>` dentro de `backend`.
 
-- `SQS_QUEUE_URL`: URL da fila retornada pelo `terraform output events_queue_url`.
-- `SQS_REGION`: região onde a fila foi provisionada (ex.: `us-east-1`).
-- `SQS_ENDPOINT` (opcional): endpoint customizado para cenários com LocalStack.
-- `SQS_VISIBILITY_TIMEOUT_SECONDS`, `SQS_WAIT_TIME_SECONDS`, `SQS_MAX_NUMBER_OF_MESSAGES`, `SQS_POLL_INTERVAL_MS` e `SQS_BACKOFF_MS`: tunáveis de consumo.
+## 📫 Configuração da Fila de Eventos (AWS SQS)
+Defina as seguintes variáveis no `backend/.env` (ou use os parâmetros SSM gerados pela infraestrutura Terraform):
+- `SQS_QUEUE_URL`: URL da fila (`terraform output events_queue_url`).
+- `SQS_REGION`: região AWS (ex.: `us-east-1`).
+- `SQS_ENDPOINT` (opcional): endpoint customizado (útil com LocalStack).
+- `SQS_VISIBILITY_TIMEOUT_SECONDS`, `SQS_WAIT_TIME_SECONDS`, `SQS_MAX_NUMBER_OF_MESSAGES`, `SQS_POLL_INTERVAL_MS`, `SQS_BACKOFF_MS`: parâmetros para tunar o consumo.
 
-> Caso ainda não tenha acesso à AWS durante o desenvolvimento local, defina `MESSAGE_QUEUE_DRIVER=in-memory` para manter o comportamento anterior apenas em ambientes de teste.
+Sem acesso à AWS? Basta definir `MESSAGE_QUEUE_DRIVER=in-memory` durante o desenvolvimento local.
 
-### Segurança aplicada na API
+## 🛡️ Camada de Segurança da API
+- **Validação com Zod** em todos os fluxos críticos, com mensagens claras para o usuário.
+- **Proteções HTTP** com Helmet, CORS configurável e payloads JSON limitados.
+- **Rate limiting distribuído** com Redis e janelas específicas para login e rotas públicas.
+- **Autenticação robusta** com refresh tokens persistidos e hashed, detectando reutilização indevida.
+- **Rotação automática de chaves JWT** com identificação (`kid`) embutida no token.
+- **Cookies HttpOnly** para refresh token (com fallback via corpo da requisição).
 
-A camada de backend recebeu reforços de segurança completos:
+Variáveis úteis: `CORS_ALLOWED_ORIGINS`, `RATE_LIMIT_*`, `JWT_ROTATION_INTERVAL_MINUTES`, `JWT_REFRESH_EXPIRES_IN_MS`, `LOG_LEVEL`, `OTEL_TRACING_ENABLED`, `OTEL_SERVICE_NAME`, `OTEL_EXPORTER_OTLP_*`.
 
-- **Validação de entrada com Zod** em todos os fluxos sensíveis, garantindo mensagens humanizadas.
-- **Proteções HTTP** com Helmet, políticas CORS configuráveis via variáveis de ambiente e limitação de payloads JSON.
-- **Rate limiting inteligente** com janelas específicas para autenticação e uso geral, agora distribuído com Redis para manter proteção consistente em múltiplas réplicas.
-- **Autenticação robusta** com refresh tokens persistidos e hashed no banco, detectando reutilização indevida e permitindo logout seguro.
-- **Rotação automática de chaves JWT** com identificação (`kid`) embutida no token e intervalo configurável.
-- **Cookies HttpOnly** para o refresh token (com fallback via corpo da requisição), facilitando aplicações SPA e mobile.
+## 🛠️ Gestão de Dados e DevOps
+- **Cache de produtos com Redis:** TTL configurável via `PRODUCT_CACHE_TTL_SECONDS`, com invalidação automática em alterações.
+- **Rate limiting centralizado:** middleware usa Redis como store principal (fallback em memória).
+- **Stack IaC com Terraform:** em `infrastructure/terraform` há templates para VPC, EC2, RDS PostgreSQL, ElastiCache Redis, SQS e parâmetros SSM. Execute `terraform init && terraform apply -var-file=terraform.tfvars` após ajustar o exemplo.
+- **Docker Compose com Redis pronto:** contêiner dedicado + variáveis pré-configuradas para desenvolvimento com cache e rate limiting distribuídos.
 
-> Configure `CORS_ALLOWED_ORIGINS`, `RATE_LIMIT_*`, `JWT_ROTATION_INTERVAL_MINUTES` e `JWT_REFRESH_EXPIRES_IN_MS` para ajustar o comportamento em produção.
-> Para observabilidade, ajuste `LOG_LEVEL`, `OTEL_TRACING_ENABLED`, `OTEL_SERVICE_NAME` e `OTEL_EXPORTER_OTLP_*` conforme o provedor de monitoramento escolhido.
+## ✅ Qualidade de Código e Testes
+- TypeScript: `npm run typecheck`.
+- ESLint/Prettier: `npm run lint` / `npm run format`.
+- Testes unitários com Jest + Testing Library + jest-axe: `npm test`.
+- Testes end-to-end com Playwright: `npm run test:e2e`.
+- CI em `.github/workflows/ci.yml` rodando lint, type-check, unitários e E2E.
 
+> Antes dos testes E2E, execute `npx playwright install --with-deps` dentro de `frontend` para instalar os navegadores.
 
-### Gestão de dados e DevOps
+## 🧳 Dev Container (VS Code)
+Há um `.devcontainer/devcontainer.json` pronto. Abra o projeto no VS Code, escolha "Reopen in Container" e deixe o ambiente subir automaticamente com Docker, banco, dependências e scripts configurados.
 
-- **Cache de produtos com Redis:** o catálogo responde mais rápido graças ao cache distribuído com TTL configurável via `PRODUCT_CACHE_TTL_SECONDS`. O backend invalida automaticamente as chaves sempre que um produto é criado, editado ou removido.
-- **Rate limiting centralizado:** o middleware agora usa Redis como store principal (com fallback em memória), garantindo limites consistentes mesmo em um cluster de múltiplas instâncias.
-- **Stack IaC completa com Terraform:** em `infrastructure/terraform` você encontra um template AWS que provisiona VPC, EC2 para o backend, RDS PostgreSQL, ElastiCache Redis, SQS e parâmetros SSM. Execute `terraform init && terraform apply -var-file=terraform.tfvars` após ajustar o `terraform.tfvars.example`.
-- **Docker Compose com Redis pronto:** o ambiente local ganhou um contêiner Redis dedicado e variáveis de ambiente já configuradas para aproveitar cache e rate limiting distribuído durante o desenvolvimento.
+## 🔗 Endpoints em Destaque
+- `GET /dashboard`: KPIs de vendas, estoque crítico e resumo financeiro (role: admin).
+- `GET /gateway/overview`: visão 360º do David Pay com volume bruto, líquido, métodos e alertas (role: admin).
+- `GET /gateway/transacoes`: lista transacional com filtros (`?status=capturado&method=pix`) (role: admin).
+- `PATCH /gateway/transacoes/:orderId/capturar`: captura financeira e libera estoque reservado (role: admin).
+- `PATCH /gateway/transacoes/:orderId/recusar`: registra chargeback/falha e devolve reservas automaticamente (role: admin).
 
-### Qualidade de código e testes
-
-O frontend agora conta com uma esteira completa de qualidade:
-
-- TypeScript com `npm run typecheck` e ESLint + Prettier (`npm run lint` / `npm run format`).
-- Testes unitários com Jest + Testing Library e auditoria de acessibilidade via jest-axe (`npm test`).
-- Testes end-to-end com Playwright (`npm run test:e2e`).
-- Workflow de CI (`.github/workflows/ci.yml`) que automatiza lint, type-check, unit tests e E2E.
-
-> ⚙️ Antes de rodar os testes E2E localmente execute `npx playwright install --with-deps` dentro de `frontend` para instalar os navegadores.
-
-### Dev Container (VS Code)
-
-Há um `.devcontainer/devcontainer.json` configurado. Abra a pasta no VS Code, aceite a sugestão "Reopen in Container" e aguarde o provisioning: Docker, banco, dependências e scripts já sobem prontos para você focar no código.
-
-#### Endpoints de destaque
-
-- `GET /dashboard`: KPIs de vendas, estoque crítico e resumo financeiro do gateway. (Requer role: admin)
-- `GET /gateway/overview`: visão 360º do David Pay com volume bruto, líquido, métodos e alertas. (Requer role: admin)
-- `GET /gateway/transacoes`: lista transacional com filtros por status e método (`?status=capturado&method=pix`). (Requer role: admin)
-- `PATCH /gateway/transacoes/:orderId/capturar`: confirma a captura financeira de um pedido e libera o consumo definitivo do estoque reservado. (Requer role: admin)
-- `PATCH /gateway/transacoes/:orderId/recusar`: registra falha/chargeback do pagamento e devolve automaticamente as reservas de estoque. (Requer role: admin)
-
-## Recursos principais
-
+## 💡 Experiência do Usuário e Diferenciais
 - **Vitrine responsiva** com filtros por categoria, destaques e cards ricos.
-- **SSR/SSG com Next.js** garantindo TTFB baixo na Home e páginas de produto, favorecendo SEO e performance.
+- **SSR/SSG com Next.js** para TTFB baixo e SEO consistente.
 - **Detalhes completos do produto** com galerias, benefícios e preços promocionais.
 - **Carrinho inteligente** com resumo, remoção de itens e total dinâmico.
-- **Checkout humanizado** com formulário validado e envio de pedido para a API.
-- **Painel administrativo** com autenticação automática, KPIs e monitoramento de estoque crítico.
-- **Contexto global de autenticação** no frontend, facilitando a proteção de rotas e o gerenciamento da sessão JWT.
-- **Dashboard financeiro David Pay** com visão completa do gateway de pagamento, taxa de aprovação, agenda de liquidação e alertas de risco.
+- **Checkout humanizado** com validação clara e integração direta com a API.
+- **Painel administrativo completo** com autenticação, KPIs e monitoramento de estoque crítico.
+- **Contexto global de autenticação** no frontend, protegendo rotas e gerenciando sessão JWT.
+- **Dashboard financeiro David Pay** com volume, mix de métodos, alertas e agenda de liquidação.
 
-### Painel financeiro em detalhes
+## 🤝 Contribuição, Contato e Comunidade
+- **Como contribuir:** abra uma issue descrevendo o contexto, crie uma branch seguindo o padrão `feature/nome-curto`, desenvolva com commits pequenos e envie um PR mencionando a issue. Nosso template cobra descrição, testes executados e screenshots quando houver impacto visual.
+- **Discussions & suporte:** use o board de Discussions para compartilhar ideias de features, melhorias UX e integrações externas. Dúvidas críticas podem ser abertas como issues marcadas com o label `support`.
+- **Contato direto:** `time@davidstore.com` ou canal do Slack `#davidstore-dev` (solicite convite na issue `community-access`).
+- **Reconhecimento da galera:** adicionamos automaticamente quem envia PR aprovado à lista de contribuidores abaixo.
 
-- KPIs de volume bruto, líquido, ticket médio aprovado e tempo médio de liquidação.
-- Mix de métodos (cartão, PIX, boleto e carteira digital) com percentuais e montantes.
-- Alertas inteligentes de risco, chargeback e revisão antifraude com contexto do cliente.
-- Agenda de liquidações futuras e acompanhamento do tempo de autorização/captura.
-- Lista de transações recentes com filtros por método e status via API dedicada.
-- **API estruturada** por camadas (controllers, services, middleware) com persistência real em PostgreSQL/Prisma e pronta para escalar.
+| Contribuidores |
+| --- |
+| <sub>![](https://avatars.githubusercontent.com/u/9919?s=32)  ![](https://avatars.githubusercontent.com/u/2?s=32)  ![](https://avatars.githubusercontent.com/u/3?s=32)  ![](https://avatars.githubusercontent.com/u/4?s=32)  ![](https://avatars.githubusercontent.com/u/5?s=32)  ...</sub> |
 
-## Próximos passos sugeridos
+> Curtiu o projeto? Considere dar uma ⭐ no repositório para sabermos que ele está sendo útil!
 
-- Expandir a cobertura de testes (unitários e E2E) e adicionar testes de contrato da API.
-- Integração com provedores de pagamento e logística.
-- Internacionalização e acessibilidade aprimoradas.
+## 🧭 Próximos Passos Sugeridos
+- Ampliar cobertura de testes (unitários, E2E e contratos de API).
+- Integrar com provedores reais de pagamento e logística.
+- Investir em internacionalização e aprimorar acessibilidade.
 
-## Licença
-
+## 📄 Licença
 Este projeto é distribuído sob a licença MIT.
