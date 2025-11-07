@@ -75,19 +75,25 @@ DavidStore/
 Antes de rodar qualquer comando, confirme:
 1. `npm install` executado na raiz para instalar workspaces (`backend`, `frontend`, `shared`).
 2. Arquivos `.env` clonados a partir dos exemplos (`backend/.env.example`, `frontend/.env.example`).
-3. Docker em execução (caso use containers) e porta `3000`/`4000` livres.
-4. Credenciais AWS válidas exportadas (se quiser usar SQS real e Terraform).
+3. Segredos JWT configurados manualmente com pelo menos 32 caracteres (`JWT_SECRET_PRIMARY` e, opcionalmente, `JWT_SECRET_SECONDARY`).
+4. Definição de um token forte para provisão de administradores (`ADMIN_PROVISIONING_TOKEN`) no backend.
+5. Docker em execução (caso use containers) e porta `3000`/`4000` livres.
+6. Credenciais AWS válidas exportadas (se quiser usar SQS real e Terraform).
 
 ### Opção 1 — Stack completa com Docker Compose
 1. Copie as variáveis de ambiente: `cp backend/.env.example backend/.env` (ajuste `JWT_SECRET_PRIMARY` e `JWT_SECRET_SECONDARY`).
 2. Suba tudo: `docker compose up --build`.
 3. Popule o banco com dados demo: `docker compose exec backend npm run --workspace backend db:seed`.
+4. Provisione uma conta administrativa segura (exemplo):
+   ```bash
+   docker compose exec backend \
+     npm run --workspace backend admin:provision -- \
+     --email=admin@minhaempresa.com \
+     --password='SenhaUltraForte!2024' \
+     --token="$ADMIN_PROVISIONING_TOKEN"
+   ```
 
 Após isso, o backend responde em `http://localhost:4000` e o frontend em `http://localhost:3000`.
-
-Credenciais padrão para explorar o painel:
-- E-mail: `admin@davidstore.com`
-- Senha: `admin123`
 
 ### Opção 2 — Execução manual
 1. Garanta um PostgreSQL rodando e crie o banco `davidstore`.
@@ -100,7 +106,13 @@ Credenciais padrão para explorar o painel:
    npm run --workspace backend dev
    ```
    A API fica disponível em `http://localhost:4000`.
-3. Em outro terminal, suba o frontend:
+3. Gere uma conta administrativa com o script dedicado (exemplo):
+   ```bash
+   ADMIN_PROVISIONING_TOKEN=defina_um_token npm run --workspace backend admin:provision -- \
+     --email=admin@minhaempresa.com --password='SenhaUltraForte!2024' --token=defina_um_token
+   ```
+   Repita o comando sempre que precisar criar ou atualizar um administrador.
+4. Em outro terminal, suba o frontend:
    ```bash
    npm run --workspace frontend dev
    ```
@@ -120,11 +132,13 @@ Credenciais padrão para explorar o painel:
 | Objetivo | Comando | Observações |
 | --- | --- | --- |
 | Instalar dependências | `npm install` | Executa na raiz e habilita os workspaces. |
+| Auditoria de dependências | `npm run audit` | Executa `npm audit` em todos os workspaces para flagar CVEs conhecidas. |
 | Checar tipos | `npm run typecheck` | Aproveita `tsconfig` compartilhado e detecta regressões cedo. |
 | Lintar projeto | `npm run lint` | Aplica regras no backend e frontend de uma vez. |
 | Formatar código | `npm run format` | Usa Prettier com opinião unificada. |
 | Testes unitários | `npm test` | Orquestra Jest em paralelo nos workspaces. |
 | Testes E2E | `npm run test:e2e` | Requer `playwright install --with-deps` antes do primeiro uso. |
+| Provisionar administrador | `npm run --workspace backend admin:provision -- --email=... --password=... --token=...` | Requer `ADMIN_PROVISIONING_TOKEN` configurado e senhas complexas. |
 
 > 💡 Para criar novas migrations durante o desenvolvimento, use `npm run migrate:dev -- --name <descricao>` dentro de `backend`.
 
@@ -143,7 +157,9 @@ Sem acesso à AWS? Basta definir `MESSAGE_QUEUE_DRIVER=in-memory` durante o dese
 - **Rate limiting distribuído** com Redis e janelas específicas para login e rotas públicas.
 - **Autenticação robusta** com refresh tokens persistidos e hashed, detectando reutilização indevida.
 - **Rotação automática de chaves JWT** com identificação (`kid`) embutida no token.
-- **Cookies HttpOnly** para refresh token (com fallback via corpo da requisição).
+- **Segredos JWT obrigatórios** (`JWT_SECRET_PRIMARY`/`JWT_SECRET_SECONDARY`) sem fallback fraco — a API não inicia se um valor forte (≥32 caracteres) não estiver definido.
+- **Cookies HttpOnly** para tokens de acesso e refresh, minimizando exposição via `localStorage`.
+- **Provisionamento seguro de administradores** via script `admin:provision` protegido por `ADMIN_PROVISIONING_TOKEN`.
 
 Variáveis úteis: `CORS_ALLOWED_ORIGINS`, `RATE_LIMIT_*`, `JWT_ROTATION_INTERVAL_MINUTES`, `JWT_REFRESH_EXPIRES_IN_MS`, `LOG_LEVEL`, `OTEL_TRACING_ENABLED`, `OTEL_SERVICE_NAME`, `OTEL_EXPORTER_OTLP_*`.
 

@@ -6,10 +6,7 @@ import { UnauthorizedError } from '../utils/errors.js'
 
 const {
   security: {
-    jwt: {
-      accessToken: { expiresInSeconds },
-      refreshToken: refreshConfig
-    }
+    jwt: { accessToken: accessConfig, refreshToken: refreshConfig }
   }
 } = config
 
@@ -46,7 +43,7 @@ export const issueSessionTokens = async (user, context = {}) => {
 
   return {
     accessToken,
-    expiresIn: expiresInSeconds,
+    expiresIn: accessConfig.expiresInSeconds,
     refreshToken: refreshTokenData.token,
     refreshTokenExpiresAt: refreshTokenData.expiresAt,
     user: {
@@ -108,7 +105,7 @@ export const refreshSession = async (refreshToken, context = {}) => {
 
   return {
     accessToken: signAccessToken({ sub: user.id, role: user.role }),
-    expiresIn: expiresInSeconds,
+    expiresIn: accessConfig.expiresInSeconds,
     refreshToken: newRefreshToken.token,
     refreshTokenExpiresAt: newRefreshToken.expiresAt,
     user: {
@@ -148,3 +145,15 @@ export const getRefreshCookieOptions = () => {
 }
 
 export const getRefreshCookieName = () => refreshConfig.cookieName
+
+export const getAccessCookieOptions = () => {
+  const secure = process.env.NODE_ENV === 'production'
+  return {
+    ...accessConfig.cookieOptions,
+    httpOnly: true,
+    secure,
+    maxAge: accessConfig.expiresInSeconds * 1000
+  }
+}
+
+export const getAccessCookieName = () => accessConfig.cookieName

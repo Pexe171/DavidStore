@@ -6,17 +6,19 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState
 } from 'react'
 import type { FC, PropsWithChildren } from 'react'
 
-import { authenticate, setAuthToken } from '@/services/api'
+import {
+  authenticate,
+  refreshSession,
+  setAuthToken,
+  signOut,
+  type AuthResponse
+} from '@/services/api'
 
-type AuthUser = {
-  email: string
-  role: 'admin' | 'usuario'
-}
+type AuthUser = AuthResponse['user']
 
 type AuthCredentials = {
   email: string
@@ -29,64 +31,30 @@ type AuthContextValue = {
   isAuthenticated: boolean
   isAdmin: boolean
   isLoading: boolean
+  isRestoring: boolean
   login: (credentials: AuthCredentials) => Promise<void>
-  logout: () => void
+  logout: () => Promise<void>
   refresh: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
-const TOKEN_STORAGE_KEY = 'davidstore:auth-token'
-const USER_STORAGE_KEY = 'davidstore:auth-user'
-
-const resolveRole = (email: string): AuthUser['role'] => {
-  return email === 'admin@davidstore.com' ? 'admin' : 'usuario'
-}
-
 export const AuthProvider: FC<PropsWithChildren> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(false)
-  const lastCredentialsRef = useRef<AuthCredentials | null>(null)
+  const [isRestoring, setIsRestoring] = useState<boolean>(true)
 
-  useEffect(() => {
-    const storedToken = window.localStorage.getItem(TOKEN_STORAGE_KEY)
-    const storedUser = window.localStorage.getItem(USER_STORAGE_KEY)
-
-    if (storedToken && storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser) as AuthUser
-        setToken(storedToken)
-        setUser(parsedUser)
-        setAuthToken(storedToken)
-      } catch (error) {
-        console.warn('Não foi possível restaurar a sessão armazenada:', error)
-        window.localStorage.removeItem(TOKEN_STORAGE_KEY)
-        window.localStorage.removeItem(USER_STORAGE_KEY)
-      }
-    }
-  }, [])
-
-  const persistSession = useCallback((sessionToken: string, email: string) => {
-    const authUser: AuthUser = {
-      email,
-      role: resolveRole(email)
-    }
-
-    setToken(sessionToken)
-    setUser(authUser)
-    setAuthToken(sessionToken)
-
-    window.localStorage.setItem(TOKEN_STORAGE_KEY, sessionToken)
-    window.localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(authUser))
+  const applySession = useCallback((session: AuthResponse) => {
+    setToken(session.accessToken)
+    setUser(session.user)
+    setAuthToken(session.accessToken)
   }, [])
 
   const clearSession = useCallback(() => {
     setToken(null)
     setUser(null)
     setAuthToken()
-    window.localStorage.removeItem(TOKEN_STORAGE_KEY)
-    window.localStorage.removeItem(USER_STORAGE_KEY)
   }, [])
 
   const login = useCallback(
@@ -94,27 +62,55 @@ export const AuthProvider: FC<PropsWithChildren> = ({ children }) => {
       setIsLoading(true)
       try {
         const response = await authenticate(credentials)
-        persistSession(response.token, credentials.email)
-        lastCredentialsRef.current = credentials
+        applySession(response)
+      } catch (error) {
+        clearSession()
+        throw error
       } finally {
         setIsLoading(false)
       }
     },
-    [persistSession]
+    [applySession, clearSession]
   )
 
-  const logout = useCallback(() => {
-    lastCredentialsRef.current = null
-    clearSession()
+  const logout = useCallback(async (): Promise<void> => {
+    setIsLoading(true)
+    try {
+      await signOut()
+    } finally {
+      clearSession()
+      setIsLoading(false)
+    }
   }, [clearSession])
 
   const refresh = useCallback(async (): Promise<void> => {
-    if (!lastCredentialsRef.current) {
-      throw new Error('Credenciais não disponíveis para atualizar a sessão.')
+    setIsLoading(true)
+    try {
+      const session = await refreshSession()
+      applySession(session)
+    } catch (error) {
+      clearSession()
+      throw error
+    } finally {
+      setIsLoading(false)
+    }
+  }, [applySession, clearSession])
+
+  useEffect(() => {
+    const restoreSession = async (): Promise<void> => {
+      try {
+        const session = await refreshSession()
+        applySession(session)
+      } catch (error) {
+        clearSession()
+        console.warn('Não foi possível restaurar a sessão existente.', error)
+      } finally {
+        setIsRestoring(false)
+      }
     }
 
-    await login(lastCredentialsRef.current)
-  }, [login])
+    void restoreSession()
+  }, [applySession, clearSession])
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -123,11 +119,12 @@ export const AuthProvider: FC<PropsWithChildren> = ({ children }) => {
       isAuthenticated: Boolean(token),
       isAdmin: user?.role === 'admin',
       isLoading,
+      isRestoring,
       login,
       logout,
       refresh
     }),
-    [user, token, isLoading, login, logout, refresh]
+    [user, token, isLoading, isRestoring, login, logout, refresh]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

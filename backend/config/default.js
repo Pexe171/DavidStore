@@ -1,3 +1,36 @@
+const ensureStrongSecret = (secret, label) => {
+  if (!secret) {
+    throw new Error(
+      `Configuração ausente: defina a variável ${label} com um valor aleatório de, no mínimo, 32 caracteres.`
+    )
+  }
+
+  if (secret.length < 32) {
+    throw new Error(
+      `Segredo fraco detectado em ${label}: utilize um valor com pelo menos 32 caracteres para assinar tokens JWT com segurança.`
+    )
+  }
+
+  return secret
+}
+
+const buildJwtKeys = () => {
+  const primarySecret = process.env.JWT_SECRET_PRIMARY || process.env.JWT_SECRET
+  const validatedPrimary = ensureStrongSecret(primarySecret, 'JWT_SECRET_PRIMARY ou JWT_SECRET')
+
+  const keys = [{ id: 'primary', secret: validatedPrimary }]
+
+  const secondarySecret = process.env.JWT_SECRET_SECONDARY
+  if (secondarySecret) {
+    keys.push({
+      id: 'secondary',
+      secret: ensureStrongSecret(secondarySecret, 'JWT_SECRET_SECONDARY')
+    })
+  }
+
+  return keys
+}
+
 export default {
   app: {
     name: 'David Store API',
@@ -39,7 +72,14 @@ export default {
       issuer: 'David Store API',
       audience: 'david-store-clients',
       accessToken: {
-        expiresInSeconds: Number(process.env.JWT_ACCESS_EXPIRES_IN_SECONDS) || 15 * 60
+        expiresInSeconds: Number(process.env.JWT_ACCESS_EXPIRES_IN_SECONDS) || 15 * 60,
+        cookieName: process.env.JWT_ACCESS_COOKIE_NAME || 'davidstore_access_token',
+        cookieOptions: {
+          httpOnly: true,
+          sameSite: process.env.JWT_ACCESS_COOKIE_SAMESITE || 'lax',
+          path: process.env.JWT_ACCESS_COOKIE_PATH || '/',
+          domain: process.env.JWT_ACCESS_COOKIE_DOMAIN
+        }
       },
       refreshToken: {
         expirationMs:
@@ -48,27 +88,14 @@ export default {
         cookieOptions: {
           httpOnly: true,
           sameSite: 'strict',
-          path: '/auth/refresh'
+          path: '/auth/refresh',
+          domain: process.env.JWT_REFRESH_COOKIE_DOMAIN
         }
       },
       keyRotationIntervalMinutes:
         Number(process.env.JWT_ROTATION_INTERVAL_MINUTES) || 12 * 60,
       keyRetention: Number(process.env.JWT_KEY_RETENTION) || 3,
-      keys: (() => {
-        const initialKeys = []
-        const primarySecret = process.env.JWT_SECRET_PRIMARY || process.env.JWT_SECRET
-        if (primarySecret) {
-          initialKeys.push({ id: 'primary', secret: primarySecret })
-        }
-        const secondarySecret = process.env.JWT_SECRET_SECONDARY
-        if (secondarySecret) {
-          initialKeys.push({ id: 'secondary', secret: secondarySecret })
-        }
-        if (!initialKeys.length) {
-          initialKeys.push({ id: 'bootstrap', secret: 'segredo-super-seguro' })
-        }
-        return initialKeys
-      })()
+      keys: buildJwtKeys()
     }
   },
   cache: {

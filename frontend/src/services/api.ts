@@ -33,7 +33,8 @@ const baseURL =
   'http://localhost:4000'
 
 const api = axios.create({
-  baseURL
+  baseURL,
+  withCredentials: true
 })
 
 export const fetchProducts = async (
@@ -68,6 +69,15 @@ export const setAuthToken = (token?: string): void => {
   }
 
   delete api.defaults.headers.common.Authorization
+}
+
+export const refreshSession = async (): Promise<AuthResponse> => {
+  const { data } = await api.post('/auth/refresh', {})
+  return AuthResponseSchema.parse(data)
+}
+
+export const signOut = async (): Promise<void> => {
+  await api.post('/auth/logout', {})
 }
 
 export const fetchDashboard = async (): Promise<DashboardMetrics> => {

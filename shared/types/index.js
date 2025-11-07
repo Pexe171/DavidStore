@@ -216,8 +216,19 @@ export const OrderListSchema = z.array(OrderSchema)
 
 export const SubmitOrderPayloadSchema = CreateOrderBodySchema
 
+export const AuthenticatedUserSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  email: z.string().email(),
+  role: z.enum(['admin', 'customer'])
+})
+
 export const AuthResponseSchema = z.object({
-  token: z.string()
+  token: z.string(),
+  accessToken: z.string(),
+  expiresIn: z.number(),
+  refreshTokenExpiresAt: z.union([z.string(), z.date()]),
+  user: AuthenticatedUserSchema
 })
 
 export const PaymentTransactionSchema = z.object({

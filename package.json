@@ -1,6 +1,10 @@
 {
   "name": "david-store",
   "private": true,
+  "scripts": {
+    "audit": "npm audit --workspaces",
+    "audit:fix": "npm audit fix --workspaces"
+  },
   "workspaces": [
     "backend",
     "frontend",
