@@ -190,5 +190,8 @@ Há um `.devcontainer/devcontainer.json` pronto. Abra o projeto no VS Code, esco
 - Integrar com provedores reais de pagamento e logística.
 - Investir em internacionalização e aprimorar acessibilidade.
 
+## 🤝 Créditos
+Projeto idealizado e desenvolvido por **David Henrique**, engenheiro de software formado pela UFAM. Acompanhe novidades e bastidores no Instagram [@David.devloli](https://www.instagram.com/David.devloli).
+
 ## 📄 Licença
 Este projeto é distribuído sob a licença MIT.
