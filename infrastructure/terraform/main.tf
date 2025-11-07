@@ -13,12 +13,61 @@ provider "aws" {
   region = var.aws_region
 }
 
+data "aws_caller_identity" "current" {}
+
 locals {
   project_name = var.project_name
   common_tags  = merge(var.default_tags, {
     Project     = var.project_name
     Environment = var.environment
   })
+}
+
+data "aws_iam_policy_document" "backend_assume_role" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["ec2.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "backend" {
+  name               = "${local.project_name}-backend-role"
+  assume_role_policy = data.aws_iam_policy_document.backend_assume_role.json
+  tags               = merge(local.common_tags, { Name = "${local.project_name}-backend-role" })
+}
+
+data "aws_iam_policy_document" "backend_ssm" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "ssm:GetParameter",
+      "ssm:GetParameters",
+      "ssm:GetParameterHistory"
+    ]
+    resources = [aws_ssm_parameter.backend_env.arn]
+  }
+
+  statement {
+    effect = "Allow"
+    actions = ["kms:Decrypt"]
+    resources = ["arn:aws:kms:${var.aws_region}:${data.aws_caller_identity.current.account_id}:alias/aws/ssm"]
+  }
+}
+
+resource "aws_iam_role_policy" "backend_ssm_access" {
+  name   = "${local.project_name}-backend-ssm-access"
+  role   = aws_iam_role.backend.id
+  policy = data.aws_iam_policy_document.backend_ssm.json
+}
+
+resource "aws_iam_instance_profile" "backend" {
+  name = "${local.project_name}-backend-profile"
+  role = aws_iam_role.backend.name
 }
 
 resource "aws_vpc" "main" {
@@ -146,14 +195,13 @@ resource "aws_instance" "backend" {
   subnet_id              = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.backend.id]
   key_name               = var.ssh_key_name
+  iam_instance_profile   = aws_iam_instance_profile.backend.name
 
   user_data = templatefile("${path.module}/templates/backend-user-data.sh", {
-    docker_image         = var.backend_docker_image
-    environment          = var.environment
-    redis_host           = aws_elasticache_replication_group.redis.primary_endpoint_address
-    database_url         = "postgresql://${var.postgres_username}:${var.postgres_password}@${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${var.postgres_database}?schema=public"
-    sqs_queue_url        = aws_sqs_queue.events.id
-    aws_region           = var.aws_region
+    docker_image       = var.backend_docker_image
+    environment        = var.environment
+    ssm_parameter_name = aws_ssm_parameter.backend_env.name
+    aws_region         = var.aws_region
   })
 
   tags = merge(local.common_tags, { Name = "${local.project_name}-backend" })
