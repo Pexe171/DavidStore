@@ -182,15 +182,6 @@ Há um `.devcontainer/devcontainer.json` pronto. Abra o projeto no VS Code, esco
 - **Contexto global de autenticação** no frontend, protegendo rotas e gerenciando sessão JWT.
 - **Dashboard financeiro David Pay** com volume, mix de métodos, alertas e agenda de liquidação.
 
-## 🤝 Contribuição, Contato e Comunidade
-- **Como contribuir:** abra uma issue descrevendo o contexto, crie uma branch seguindo o padrão `feature/nome-curto`, desenvolva com commits pequenos e envie um PR mencionando a issue. Nosso template cobra descrição, testes executados e screenshots quando houver impacto visual.
-- **Discussions & suporte:** use o board de Discussions para compartilhar ideias de features, melhorias UX e integrações externas. Dúvidas críticas podem ser abertas como issues marcadas com o label `support`.
-- **Contato direto:** `time@davidstore.com` ou canal do Slack `#davidstore-dev` (solicite convite na issue `community-access`).
-- **Reconhecimento da galera:** adicionamos automaticamente quem envia PR aprovado à lista de contribuidores abaixo.
-
-| Contribuidores |
-| --- |
-| <sub>![](https://avatars.githubusercontent.com/u/9919?s=32)  ![](https://avatars.githubusercontent.com/u/2?s=32)  ![](https://avatars.githubusercontent.com/u/3?s=32)  ![](https://avatars.githubusercontent.com/u/4?s=32)  ![](https://avatars.githubusercontent.com/u/5?s=32)  ...</sub> |
 
 > Curtiu o projeto? Considere dar uma ⭐ no repositório para sabermos que ele está sendo útil!
 
