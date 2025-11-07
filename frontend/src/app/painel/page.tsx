@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { FormEvent, useCallback, useEffect, useState } from 'react'
 
 import {
   fetchDashboard,
@@ -23,39 +23,39 @@ const PainelPage = (): JSX.Element => {
   const [paymentTransactions, setPaymentTransactions] = useState<
     PaymentTransaction[]
   >([])
-  const [loading, setLoading] = useState<boolean>(true)
+  const [loading, setLoading] = useState<boolean>(false)
   const [error, setError] = useState<string>('')
-  const [authReady, setAuthReady] = useState<boolean>(false)
-  const { isAdmin, login, isLoading: authLoading } = useAuth()
+  const [email, setEmail] = useState<string>('')
+  const [password, setPassword] = useState<string>('')
+  const [loginError, setLoginError] = useState<string>('')
+  const { isAdmin, login, isLoading: authLoading, isRestoring } = useAuth()
 
-  useEffect(() => {
-    if (authReady) {
-      return
-    }
-
-    const ensureAdminSession = async (): Promise<void> => {
+  const handleLogin = useCallback(
+    async (event: FormEvent<HTMLFormElement>): Promise<void> => {
+      event.preventDefault()
+      setLoginError('')
       try {
-        if (!isAdmin) {
-          await login({ email: 'admin@davidstore.com', password: 'admin123' })
-        }
-        setAuthReady(true)
+        await login({ email, password })
+        setEmail('')
+        setPassword('')
       } catch (err) {
         console.error('Erro ao autenticar administrador:', err)
-        setError('Não foi possível autenticar o administrador do painel.')
-        setLoading(false)
+        setLoginError(
+          'Credenciais inválidas ou ausência de permissões administrativas.'
+        )
       }
-    }
-
-    void ensureAdminSession()
-  }, [authReady, isAdmin, login])
+    },
+    [email, password, login]
+  )
 
   useEffect(() => {
-    if (!authReady || !isAdmin) {
+    if (!isAdmin || isRestoring) {
       return
     }
 
     const loadDashboard = async (): Promise<void> => {
       setLoading(true)
+      setError('')
       try {
         const [dashboardResponse, paymentResponse, transactionsResponse] =
           await Promise.all([
@@ -87,7 +87,79 @@ const PainelPage = (): JSX.Element => {
     }
 
     void loadDashboard()
-  }, [authReady, isAdmin])
+  }, [isAdmin, isRestoring])
+
+  if (isRestoring) {
+    return (
+      <section className="container" style={{ padding: '2rem 0 4rem' }}>
+        <p>Restaurando sessão segura do painel da David Store...</p>
+      </section>
+    )
+  }
+
+  if (!isAdmin) {
+    return (
+      <section
+        className="container"
+        style={{ padding: '2rem 0 4rem', maxWidth: '480px' }}
+      >
+        <div className="card" style={{ display: 'grid', gap: '1.5rem' }}>
+          <header style={{ display: 'grid', gap: '0.5rem' }}>
+            <h1>Acesso restrito ao painel</h1>
+            <p style={{ color: '#64748b', margin: 0 }}>
+              Informe as credenciais administrativas emitidas de forma segura
+              para visualizar os indicadores estratégicos.
+            </p>
+          </header>
+          <form onSubmit={handleLogin} style={{ display: 'grid', gap: '1rem' }}>
+            <label style={{ display: 'grid', gap: '0.25rem' }}>
+              <span style={{ fontWeight: 600 }}>E-mail corporativo</span>
+              <input
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                required
+                autoComplete="username"
+                placeholder="admin@empresa.com"
+                style={{
+                  padding: '0.75rem',
+                  borderRadius: '0.75rem',
+                  border: '1px solid #cbd5f5'
+                }}
+              />
+            </label>
+            <label style={{ display: 'grid', gap: '0.25rem' }}>
+              <span style={{ fontWeight: 600 }}>Senha</span>
+              <input
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                required
+                autoComplete="current-password"
+                placeholder="Sua senha forte"
+                style={{
+                  padding: '0.75rem',
+                  borderRadius: '0.75rem',
+                  border: '1px solid #cbd5f5'
+                }}
+              />
+            </label>
+            {loginError && (
+              <p style={{ color: '#b91c1c', margin: 0 }}>{loginError}</p>
+            )}
+            <button
+              type="submit"
+              className="button"
+              disabled={authLoading}
+              style={{ opacity: authLoading ? 0.7 : 1 }}
+            >
+              {authLoading ? 'Validando credenciais...' : 'Entrar no painel'}
+            </button>
+          </form>
+        </div>
+      </section>
+    )
+  }
 
   if (loading || authLoading) {
     return (

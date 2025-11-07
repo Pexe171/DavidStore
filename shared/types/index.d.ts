@@ -149,8 +149,18 @@ export declare const OrderSchema: z.ZodObject<{
 export declare const OrderListSchema: z.ZodArray<typeof OrderSchema>
 export declare const SubmitOrderPayloadSchema: typeof CreateOrderBodySchema
 
+export declare const AuthenticatedUserSchema: z.ZodObject<{
+  id: z.ZodString
+  name: z.ZodString
+  email: z.ZodString
+  role: z.ZodEnum<["admin", "customer"]>
+}>
 export declare const AuthResponseSchema: z.ZodObject<{
   token: z.ZodString
+  accessToken: z.ZodString
+  expiresIn: z.ZodNumber
+  refreshTokenExpiresAt: z.ZodUnion<[z.ZodString, z.ZodDate]>
+  user: typeof AuthenticatedUserSchema
 }>
 
 export declare const PaymentTransactionSchema: z.ZodObject<{
@@ -262,6 +272,7 @@ export type DashboardMetrics = z.infer<typeof DashboardMetricsSchema>
 export type PaymentOverview = z.infer<typeof PaymentOverviewSchema>
 export type PaymentTransactionsResponse = z.infer<typeof PaymentTransactionsResponseSchema>
 export type PaymentTransaction = z.infer<typeof PaymentTransactionSchema>
+export type AuthenticatedUser = z.infer<typeof AuthenticatedUserSchema>
 export type AuthResponse = z.infer<typeof AuthResponseSchema>
 
 export default {

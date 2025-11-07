@@ -197,14 +197,6 @@ const products = [
 
 const users = [
   {
-    id: 'admin-001',
-    name: 'David Admin',
-    email: 'admin@davidstore.com',
-    password: 'admin123',
-    role: 'admin',
-    addresses: []
-  },
-  {
     id: 'user-001',
     name: 'Ana Beatriz',
     email: 'ana.b@davidstore.com',

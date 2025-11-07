@@ -1,17 +1,25 @@
 import { verifyAccessToken } from '../lib/jwtManager.js'
+import { getAccessCookieName } from '../services/tokenService.js'
 import { ForbiddenError, UnauthorizedError } from '../utils/errors.js'
 
 export const authenticateRequest = (roles = []) => {
   return (req, res, next) => {
     try {
-      const header = req.headers.authorization
-      if (!header) {
-        throw new UnauthorizedError('Token não fornecido.')
+      const accessCookie = req.cookies?.[getAccessCookieName()]
+      let token = accessCookie
+
+      if (!token) {
+        const header = req.headers.authorization
+        if (!header) {
+          throw new UnauthorizedError('Token não fornecido.')
+        }
+        const [type, value] = header.split(' ')
+        if (type !== 'Bearer' || !value) {
+          throw new UnauthorizedError('Token inválido.')
+        }
+        token = value
       }
-      const [type, token] = header.split(' ')
-      if (type !== 'Bearer' || !token) {
-        throw new UnauthorizedError('Token inválido.')
-      }
+
       const payload = verifyAccessToken(token)
       req.user = payload
       if (roles.length && !roles.includes(payload.role)) {
