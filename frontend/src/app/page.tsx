@@ -1,3 +1,5 @@
+import { Suspense } from 'react'
+
 import AppDownloadBanner from '@/components/AppDownloadBanner'
 import CategoryFilter from '@/components/CategoryFilter'
 import CepLookup from '@/components/CepLookup'
@@ -67,7 +69,15 @@ const HomePage = async ({
             </p>
           ) : null}
         </header>
-        <CategoryFilter categories={categories} active={activeCategory} />
+        <Suspense
+          fallback={
+            <div className="category-rail" aria-busy="true">
+              Carregando coleções em destaque...
+            </div>
+          }
+        >
+          <CategoryFilter categories={categories} active={activeCategory} />
+        </Suspense>
         {errorMessage ? (
           <p className="showcase-section__error">{errorMessage}</p>
         ) : products.length ? (
