@@ -77,7 +77,7 @@ Antes de rodar qualquer comando, confirme:
 2. Arquivos `.env` clonados a partir dos exemplos (`backend/.env.example`, `frontend/.env.example`).
 3. Segredos JWT configurados manualmente com pelo menos 32 caracteres (`JWT_SECRET_PRIMARY` e, opcionalmente, `JWT_SECRET_SECONDARY`).
 4. Definição de um token forte para provisão de administradores (`ADMIN_PROVISIONING_TOKEN`) no backend.
-5. Docker em execução (caso use containers) e porta `3000`/`4000` livres.
+5. Docker em execução (caso use containers) e porta `5173`/`4000` livres.
 6. Credenciais AWS válidas exportadas (se quiser usar SQS real e Terraform).
 
 ### Opção 1 — Stack completa com Docker Compose
@@ -93,7 +93,7 @@ Antes de rodar qualquer comando, confirme:
      --token="$ADMIN_PROVISIONING_TOKEN"
    ```
 
-Após isso, o backend responde em `http://localhost:4000` e o frontend em `http://localhost:3000`.
+Após isso, o backend responde em `http://localhost:4000` e o frontend em `http://localhost:5173`.
 
 ### Opção 2 — Execução manual
 1. Garanta um PostgreSQL rodando e crie o banco `davidstore`.
