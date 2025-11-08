@@ -29,32 +29,29 @@ const CategoryFilter: FC<CategoryFilterProps> = ({ categories, active }) => {
   }
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        gap: '1rem',
-        flexWrap: 'wrap',
-        marginBottom: '2rem'
-      }}
-    >
+    <nav className="category-rail" aria-label="Categorias em destaque">
       <button
+        type="button"
         onClick={() => navigateToCategory('')}
-        className="btn-primary"
-        style={{ background: active === '' ? '#0070f3' : '#1f2937' }}
+        className="category-pill"
+        data-active={active === ''}
       >
-        Todas
+        <span className="category-pill__icon">⭐</span>
+        <span className="category-pill__label">Todas</span>
       </button>
       {categories.map((category) => (
         <button
           key={category.id}
+          type="button"
           onClick={() => navigateToCategory(category.id)}
-          className="btn-primary"
-          style={{ background: active === category.id ? '#0070f3' : '#1f2937' }}
+          className="category-pill"
+          data-active={active === category.id}
         >
-          {category.name}
+          <span className="category-pill__icon">🔥</span>
+          <span className="category-pill__label">{category.name}</span>
         </button>
       ))}
-    </div>
+    </nav>
   )
 }
 
