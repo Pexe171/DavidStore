@@ -32,7 +32,7 @@ services:
     environment:
       DATABASE_URL: postgresql://david:david@db:5432/davidstore?schema=public
       PORT: 4000
-      JWT_SECRET: desenvolvimento-super-seguro
+      JWT_SECRET: desenvolvimento-super-seguro-para-jwt-com-mais-de-32-caracteres
       NODE_ENV: development
       REDIS_HOST: redis
       REDIS_PORT: 6379
