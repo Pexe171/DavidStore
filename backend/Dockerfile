@@ -1,6 +1,9 @@
 FROM node:20-alpine
 
-RUN apk add --no-cache openssl1.1-compat
+# Instala o OpenSSL mais recente disponível para Alpine 3.22.
+# A variante "openssl1.1-compat" foi removida dos repositórios recentes,
+# portanto utilizamos o pacote padrão, suficiente para a aplicação.
+RUN apk add --no-cache openssl
 
 WORKDIR /app
 
